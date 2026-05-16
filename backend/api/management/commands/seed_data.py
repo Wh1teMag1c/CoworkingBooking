@@ -1,76 +1,195 @@
 import random
+from datetime import timedelta
 from decimal import Decimal
+
+import requests
+from api.models import User, Category, Amenity, Room, RoomImage, Booking
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
-from api.models import Category, Amenity, Room
+from django.utils import timezone
+
 
 class Command(BaseCommand):
-    help = 'Seeds the database with test data'
+    help = 'Заполняет БД начальными данными: категории, удобства, комнаты с фото и бронирования'
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING('Очистка старых данных...'))
+        Booking.objects.all().delete()
+        RoomImage.objects.all().delete()
         Room.objects.all().delete()
         Category.objects.all().delete()
         Amenity.objects.all().delete()
+        User.objects.filter(is_staff=False).delete()
+
+        self.stdout.write(self.style.SUCCESS('Создание тестовых пользователей...'))
+        test_users_data = [
+            {'username': 'dmitry_dev', 'email': 'dmitry@example.com', 'first': 'Дмитрий', 'last': 'Иванов'},
+            {'username': 'anna_qa', 'email': 'anna@example.com', 'first': 'Анна', 'last': 'Смирнова'},
+            {'username': 'alex_pm', 'email': 'alex@example.com', 'first': 'Алексей', 'last': 'Петров'},
+        ]
+
+        users = []
+        for u_data in test_users_data:
+            user, created = User.objects.get_or_create(
+                username=u_data['username'],
+                defaults={
+                    'email': u_data['email'],
+                    'first_name': u_data['first'],
+                    'last_name': u_data['last'],
+                    'role': 'client'
+                }
+            )
+            if created:
+                user.set_password('password123')
+                user.save()
+            users.append(user)
 
         self.stdout.write(self.style.SUCCESS('Создание категорий...'))
-        cat1 = Category.objects.create(name='Переговорная', slug='meeting-room', description='Для деловых встреч и переговоров')
-        cat2 = Category.objects.create(name='Коворкинг', slug='coworking', description='Общее рабочее пространство')
-        cat3 = Category.objects.create(name='Лекторий', slug='lecture-hall', description='Для проведения лекций и мастер-классов')
+        categories = {
+            'small': Category.objects.create(name='Переговорная', slug='small',
+                                             description='Для деловых встреч и переговоров'),
+            'open': Category.objects.create(name='Коворкинг', slug='open', description='Общее рабочее пространство'),
+            'conf': Category.objects.create(name='Конференц-зал', slug='conf',
+                                            description='Для проведения лекций и мастер-классов'),
+        }
 
         self.stdout.write(self.style.SUCCESS('Создание удобств...'))
-        am_wifi = Amenity.objects.create(name='Wi-Fi', icon='bi bi-wifi')
-        am_projector = Amenity.objects.create(name='Проектор', icon='bi bi-projector')
-        am_whiteboard = Amenity.objects.create(name='Маркерная доска', icon='bi bi-easel')
-        am_coffee = Amenity.objects.create(name='Кофе-машина', icon='bi bi-cup-hot')
-        am_tv = Amenity.objects.create(name='ТВ-панель', icon='bi bi-tv')
+        amenities = {
+            'Wi-Fi': Amenity.objects.create(name='Wi-Fi', icon='bi-wifi'),
+            'Проектор': Amenity.objects.create(name='Проектор', icon='bi-projector'),
+            'Маркерная доска': Amenity.objects.create(name='Маркерная доска', icon='bi-easel'),
+            'Кофемашина': Amenity.objects.create(name='Кофемашина', icon='bi-cup-hot'),
+            'ТВ': Amenity.objects.create(name='ТВ-панель', icon='bi-tv'),
+        }
 
-        self.stdout.write(self.style.SUCCESS('Создание пространств...'))
-        room1 = Room.objects.create(
-            category=cat1,
-            name='Alpha Boardroom',
-            address='ул. Пушкина, д. 10',
-            floor=3,
-            capacity=12,
-            price_per_hour=Decimal('1500.00'),
-            description='Светлая переговорная с панорамными окнами и большим столом из дуба.',
-            is_active=True
-        )
-        room1.amenities.add(am_wifi, am_tv, am_whiteboard, am_coffee)
+        rooms_data = [
+            {
+                "name": "Переговорная «Малевич»",
+                "category": categories['small'],
+                "address": "Москва, Пресненская наб., 12 (БЦ Федерация)",
+                "floor": 45,
+                "capacity": 4,
+                "price_per_hour": Decimal('1500.00'),
+                "description": "Уютная комната для 1-1 встреч и видеозвонков. Отличная звукоизоляция и панорамный вид на Москву-реку. Пожалуйста, не выносите пульты от ТВ.",
+                "amenities": ['Wi-Fi', 'ТВ', 'Маркерная доска'],
+                "image_url": "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&q=80&w=1000"
+            },
+            {
+                "name": "Конференц-зал «Орбита»",
+                "category": categories['conf'],
+                "address": "Москва, ул. Лесная, 5 (БЦ Белая Площадь)",
+                "floor": 12,
+                "capacity": 30,
+                "price_per_hour": Decimal('5000.00'),
+                "description": "Просторный зал для проведения масштабных презентаций и собраний. Имеется кулер с питьевой водой и кофемашина.",
+                "amenities": ['Wi-Fi', 'Проектор', 'Маркерная доска', 'Кофемашина'],
+                "image_url": "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&q=80&w=1000"
+            },
+            {
+                "name": "Open Space «Нева»",
+                "category": categories['open'],
+                "address": "Санкт-Петербург, Дегтярный пер., 11 (БЦ Невская Ратуша)",
+                "floor": 3,
+                "capacity": 15,
+                "price_per_hour": Decimal('800.00'),
+                "description": "Открытая креативная зона с эргономичными креслами и мягкими пуфами. Идеально для брейнштормов. Просьба соблюдать комфортный уровень шума.",
+                "amenities": ['Wi-Fi', 'ТВ', 'Маркерная доска', 'Кофемашина'],
+                "image_url": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1000"
+            },
+            {
+                "name": "Переговорная «Зилант»",
+                "category": categories['small'],
+                "address": "Казань, ул. Петербургская, 52 (ИТ-парк)",
+                "floor": 5,
+                "capacity": 6,
+                "price_per_hour": Decimal('1200.00'),
+                "description": "Строгий дизайн и много естественного света. Запасные маркеры лежат в нижнем ящике тумбы.",
+                "amenities": ['Wi-Fi', 'ТВ', 'Маркерная доска'],
+                "image_url": "https://images.unsplash.com/photo-1505409859467-3a796fd5798e?auto=format&fit=crop&q=80&w=1000"
+            },
+            {
+                "name": "Зал «Аврора»",
+                "category": categories['conf'],
+                "address": "Москва, Большой бульвар, 42 (ИЦ Сколково)",
+                "floor": 2,
+                "capacity": 50,
+                "price_per_hour": Decimal('8000.00'),
+                "description": "Большой лекторий с амфитеатром. Микрофоны и кликеры выдаются на главном ресепшене под роспись.",
+                "amenities": ['Wi-Fi', 'Проектор', 'ТВ'],
+                "image_url": "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1000"
+            },
+            {
+                "name": "Переговорная «Урал»",
+                "category": categories['small'],
+                "address": "Екатеринбург, ул. Малышева, 51 (БЦ Высоцкий)",
+                "floor": 37,
+                "capacity": 8,
+                "price_per_hour": Decimal('1400.00'),
+                "description": "Современная переговорная с потрясающим видом на город. Идеально подходит для встреч с ключевыми клиентами.",
+                "amenities": ['Wi-Fi', 'Кофемашина', 'Маркерная доска'],
+                "image_url": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000"
+            }
+        ]
 
-        room2 = Room.objects.create(
-            category=cat2,
-            name='Open Space Beta',
-            address='ул. Лермонтова, д. 22',
-            floor=1,
-            capacity=30,
-            price_per_hour=Decimal('500.00'),
-            description='Стильный коворкинг в стиле лофт с эргономичными креслами и зоной отдыха.',
-            is_active=True
-        )
-        room2.amenities.add(am_wifi, am_coffee)
+        self.stdout.write(self.style.SUCCESS('Загрузка комнат и скачивание изображений...'))
+        rooms = []
+        for data in rooms_data:
+            image_url = data.pop('image_url')
+            room_amenities = data.pop('amenities')
 
-        room3 = Room.objects.create(
-            category=cat3,
-            name='Gamma Hall',
-            address='пр. Ленина, д. 100',
-            floor=2,
-            capacity=50,
-            price_per_hour=Decimal('3000.00'),
-            description='Просторный зал для митапов, оборудован профессиональным звуком и проектором.',
-            is_active=True
-        )
-        room3.amenities.add(am_wifi, am_projector, am_whiteboard)
-        
-        room4 = Room.objects.create(
-            category=cat1,
-            name='Zen Room',
-            address='ул. Пушкина, д. 10',
-            floor=3,
-            capacity=4,
-            price_per_hour=Decimal('800.00'),
-            description='Уютная комната для собеседований или 1-on-1 встреч в тихой обстановке.',
-            is_active=True
-        )
-        room4.amenities.add(am_wifi, am_whiteboard)
+            room = Room.objects.create(is_active=True, **data)
 
-        self.stdout.write(self.style.SUCCESS('Готово! База данных успешно заполнена тестовыми данными.'))
+            for am_name in room_amenities:
+                room.amenities.add(amenities[am_name])
+
+            try:
+                response = requests.get(image_url, timeout=10)
+                if response.status_code == 200:
+                    file_name = f"room_{room.id}.jpg"
+                    RoomImage.objects.create(
+                        room=room,
+                        image=ContentFile(response.content, name=file_name)
+                    )
+                    self.stdout.write(f"  [+] Скачано фото для: {room.name}")
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f"  [-] Ошибка загрузки фото для {room.name}: {e}"))
+
+            rooms.append(room)
+
+        self.stdout.write(self.style.SUCCESS('Генерация бронирований...'))
+        notes = [
+            "Синхронизация команды", "Собеседование с кандидатом",
+            "Презентация заказчику", "Планирование спринта",
+            "Встреча один на один", "Мозговой штурм"
+        ]
+
+        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+
+        for day_offset in range(1, 5):
+            current_day = base_time + timedelta(days=day_offset)
+
+            for room in rooms:
+                num_meetings = random.randint(1, 3)
+                busy_hours = set()
+
+                for _ in range(num_meetings):
+                    hour = random.randint(9, 17)
+                    if hour in busy_hours or (hour + 1) in busy_hours:
+                        continue
+
+                    busy_hours.add(hour)
+                    start_time = current_day.replace(hour=hour)
+                    end_time = start_time + timedelta(hours=random.choice([1, 2]))
+
+                    booking = Booking(
+                        user=random.choice(users),
+                        room=room,
+                        start_time=start_time,
+                        end_time=end_time,
+                        attendees_count=random.randint(2, room.capacity),
+                        status='confirmed',
+                        comment=random.choice(notes)
+                    )
+                    booking.save()
+
+        self.stdout.write(self.style.SUCCESS('Готово! База данных успешно заполнена.'))

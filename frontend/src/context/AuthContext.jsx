@@ -1,19 +1,25 @@
-import { createContext, useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import {createContext, useEffect, useState} from 'react';
+import {jwtDecode} from 'jwt-decode';
 import api from '../api';
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({children}) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const logout = () => {
+        localStorage.removeItem('access');
+        localStorage.removeItem('refresh');
+        setUser(null);
+    };
 
     const fetchUser = async (userId) => {
         try {
             const response = await api.get(`users/${userId}/`);
             setUser(response.data);
         } catch (error) {
-            console.error("Ошибка при получении данных пользователя", error);
+            logout();
         }
     };
 
@@ -22,6 +28,12 @@ export const AuthProvider = ({ children }) => {
         if (token) {
             try {
                 const decoded = jwtDecode(token);
+                if (decoded.exp * 1000 < Date.now()) {
+                    logout();
+                    setLoading(false);
+                    return;
+                }
+
                 if (decoded.user_id) {
                     fetchUser(decoded.user_id).finally(() => {
                         setLoading(false);
@@ -31,7 +43,6 @@ export const AuthProvider = ({ children }) => {
                     setLoading(false);
                 }
             } catch (error) {
-                console.error("Неверный токен", error);
                 logout();
                 setLoading(false);
             }
@@ -41,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (username, password) => {
-        const response = await api.post('token/', { username, password });
+        const response = await api.post('token/', {username, password});
         localStorage.setItem('access', response.data.access);
         localStorage.setItem('refresh', response.data.refresh);
         const decoded = jwtDecode(response.data.access);
@@ -52,14 +63,8 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('access');
-        localStorage.removeItem('refresh');
-        setUser(null);
-    };
-
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{user, login, logout, loading}}>
             {children}
         </AuthContext.Provider>
     );

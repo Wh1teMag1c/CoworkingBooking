@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import api from '../api';
 import {
     CalendarEvent,
@@ -42,7 +42,7 @@ const getLocalTimeStr = (isoString) => {
     return `${h < 10 ? '0' + h : h}:${m < 10 ? '0' + m : m}`;
 };
 
-const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
+const BookingModal = ({room, show, onClose, onBookingSuccess}) => {
     const [date, setDate] = useState(getLocalDateString());
     const [comment, setComment] = useState('');
     const [attendeesCount, setAttendeesCount] = useState(1);
@@ -240,7 +240,23 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
                 alert('Сессия истекла. Войдите снова.');
                 window.location.href = '/login';
             } else {
-                alert(err.response?.data?.error || err.response?.data?.non_field_errors?.[0] || 'Произошла ошибка при бронировании');
+                const errorData = err.response?.data;
+                let errorMsg = 'Произошла ошибка при бронировании';
+
+                if (errorData) {
+                    if (errorData.non_field_errors) {
+                        errorMsg = errorData.non_field_errors[0];
+                    } else if (errorData.error) {
+                        errorMsg = errorData.error;
+                    } else if (errorData.detail) {
+                        errorMsg = errorData.detail;
+                    } else if (typeof errorData === 'object') {
+                        errorMsg = Object.entries(errorData)
+                            .map(([key, val]) => `${key}: ${val}`)
+                            .join('\n');
+                    }
+                }
+                alert(errorMsg);
             }
         } finally {
             setLoading(false);
@@ -262,93 +278,98 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
 
     return createPortal(
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-            style={{ zIndex: 2000, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)' }}
-            onClick={onClose}>
+             style={{zIndex: 2000, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)'}}
+             onClick={onClose}>
 
             <div className="bg-white shadow-lg fade-in overflow-hidden position-relative"
-                style={{ borderRadius: '28px', maxWidth: '1000px', width: '95%', maxHeight: '95vh' }}
-                onClick={e => e.stopPropagation()}>
+                 style={{borderRadius: '28px', maxWidth: '1000px', width: '95%', maxHeight: '95vh'}}
+                 onClick={e => e.stopPropagation()}>
 
                 <div className="p-4 border-bottom d-flex justify-content-between align-items-start bg-light">
                     <div>
                         <h3 className="fw-800 mb-1 text-dark">{room.name}</h3>
                         <div className="text-muted small d-flex align-items-center fw-medium">
-                            <GeoAlt className="me-1 text-primary" /> {room.address} • Этаж {room.floor}
+                            <GeoAlt className="me-1 text-primary"/> {room.address} • Этаж {room.floor}
                         </div>
                     </div>
                     <button className="btn btn-white shadow-sm border-0 rounded-circle p-2" onClick={onClose}><X
-                        size={24} /></button>
+                        size={24}/></button>
                 </div>
 
                 <div className="row g-0">
                     <div className="col-lg-7 p-4 p-md-5 border-end"
-                        style={{ overflowY: 'auto', maxHeight: 'calc(95vh - 100px)' }}>
+                         style={{overflowY: 'auto', maxHeight: 'calc(95vh - 100px)'}}>
                         <form onSubmit={handleSubmit}>
 
                             <div className="row g-3 mb-4">
                                 <div className="col-sm-8">
-                                    <div className="text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10 h-100">
+                                    <div
+                                        className="text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10 h-100">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-2">
                                             Дата встречи
                                         </label>
                                         <div className="position-relative">
                                             <CalendarEvent
-                                                className="position-absolute top-50 start-0 translate-middle-y ms-3 text-primary" />
+                                                className="position-absolute top-50 start-0 translate-middle-y ms-3 text-primary"/>
                                             <input type="date"
-                                                className="form-control custom-input ps-5 bg-white border-0 shadow-sm rounded-3"
-                                                required
-                                                value={date} onChange={e => setDate(e.target.value)}
-                                                min={getLocalDateString()} />
+                                                   className="form-control custom-input ps-5 bg-white border-0 shadow-sm rounded-3"
+                                                   required
+                                                   value={date} onChange={e => setDate(e.target.value)}
+                                                   min={getLocalDateString()}/>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="col-sm-4">
-                                    <div className="text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10 h-100">
+                                    <div
+                                        className="text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10 h-100">
                                         <label className="form-label small fw-bold text-muted text-uppercase mb-2">
                                             Участники
                                         </label>
                                         <div className="position-relative">
-                                            <People className="position-absolute top-50 start-0 translate-middle-y ms-3 text-primary" />
+                                            <People
+                                                className="position-absolute top-50 start-0 translate-middle-y ms-3 text-primary"/>
                                             <input type="number"
-                                                className="form-control custom-input ps-5 bg-white border-0 shadow-sm rounded-3"
-                                                min="1" max={room.capacity}
-                                                value={attendeesCount} onChange={e => setAttendeesCount(e.target.value)} />
+                                                   className="form-control custom-input ps-5 bg-white border-0 shadow-sm rounded-3"
+                                                   min="1" max={room.capacity}
+                                                   value={attendeesCount}
+                                                   onChange={e => setAttendeesCount(e.target.value)}/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mb-4 text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10">
+                            <div
+                                className="mb-4 text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10">
                                 <label
                                     className="form-label small fw-bold text-muted text-uppercase mb-3 d-flex justify-content-between align-items-center"
-                                    style={{ minHeight: '24px' }}>
+                                    style={{minHeight: '24px'}}>
                                     Настройте период
                                     <span
                                         className={`text-danger bg-danger bg-opacity-10 px-2 py-1 rounded-2 transition-all fw-medium ${hasConflict() ? 'opacity-100' : 'opacity-0'}`}>
-                                        <ExclamationTriangleFill className="me-1" /> Время недоступно
+                                        <ExclamationTriangleFill className="me-1"/> Время недоступно
                                     </span>
                                 </label>
 
                                 <div
                                     className="position-relative border rounded-3 overflow-hidden bg-white shadow-sm mb-4"
-                                    style={{ height: '60px' }} ref={timelineRef}>
+                                    style={{height: '60px'}} ref={timelineRef}>
 
                                     <div className="d-flex w-100 h-100 position-absolute top-0 start-0"
-                                        style={{ cursor: 'pointer' }} onMouseDown={handleBackgroundClick}>
-                                        {Array.from({ length: 14 }).map((_, i) => {
+                                         style={{cursor: 'pointer'}} onMouseDown={handleBackgroundClick}>
+                                        {Array.from({length: 13}).map((_, i) => {
                                             const hour = i + START_HOUR;
                                             const hStr = hour < 10 ? `0${hour}` : hour;
                                             return (
                                                 <div key={hour}
-                                                    className="flex-grow-1 border-end position-relative d-flex flex-column pointer-events-none">
+                                                     className="flex-grow-1 border-end position-relative d-flex flex-column pointer-events-none">
                                                     <div className="text-center border-bottom bg-light"
-                                                        style={{
-                                                            fontSize: '0.65rem',
-                                                            fontWeight: '700',
-                                                            color: '#64748b',
-                                                            padding: '2px 0',
-                                                            zIndex: 1
-                                                        }}>
+                                                         style={{
+                                                             fontSize: '0.65rem',
+                                                             fontWeight: '700',
+                                                             color: '#64748b',
+                                                             padding: '2px 0',
+                                                             zIndex: 1
+                                                         }}>
                                                         {hStr}:00
                                                     </div>
                                                     <div className="d-flex h-100">
@@ -363,32 +384,32 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
 
                                     {minAllowedMinsRender > 0 && (
                                         <div className="position-absolute start-0 pointer-events-none"
-                                            style={{
-                                                top: '22px',
-                                                bottom: '0',
-                                                width: `${(minAllowedMinsRender / TOTAL_MINUTES) * 100}%`, ...blockedStyle
-                                            }}>
+                                             style={{
+                                                 top: '22px',
+                                                 bottom: '0',
+                                                 width: `${(minAllowedMinsRender / TOTAL_MINUTES) * 100}%`, ...blockedStyle
+                                             }}>
                                         </div>
                                     )}
 
                                     <div className="position-absolute start-0 w-100 pointer-events-none"
-                                        style={{ top: '22px', bottom: '0' }}>
+                                         style={{top: '22px', bottom: '0'}}>
                                         {busySlots.map((slot, idx) => {
                                             const s = timeToMins(getLocalTimeStr(slot.start_time));
                                             const e = timeToMins(getLocalTimeStr(slot.end_time));
                                             return (
                                                 <div key={idx} className="position-absolute h-100"
-                                                    style={{
-                                                        left: `${(s / TOTAL_MINUTES) * 100}%`,
-                                                        width: `${((e - s) / TOTAL_MINUTES) * 100}%`, ...blockedStyle
-                                                    }}>
+                                                     style={{
+                                                         left: `${(s / TOTAL_MINUTES) * 100}%`,
+                                                         width: `${((e - s) / TOTAL_MINUTES) * 100}%`, ...blockedStyle
+                                                     }}>
                                                 </div>
                                             );
                                         })}
                                     </div>
 
                                     <div className="position-absolute start-0 w-100 pointer-events-none"
-                                        style={{ top: '22px', bottom: '0' }}>
+                                         style={{top: '22px', bottom: '0'}}>
                                         <div
                                             className="position-absolute h-100 shadow-sm"
                                             style={{
@@ -411,7 +432,7 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
                                                 }}
                                                 onMouseDown={(e) => handleSliderMouseDown(e, 'start')}>
                                                 <div className="bg-white rounded-pill shadow"
-                                                    style={{ width: '4px', height: '16px' }}></div>
+                                                     style={{width: '4px', height: '16px'}}></div>
                                             </div>
                                             <div
                                                 className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
@@ -422,27 +443,30 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
                                                 }}
                                                 onMouseDown={(e) => handleSliderMouseDown(e, 'end')}>
                                                 <div className="bg-white rounded-pill shadow"
-                                                    style={{ width: '4px', height: '16px' }}></div>
+                                                     style={{width: '4px', height: '16px'}}></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="d-flex gap-3 mb-4 justify-content-center small text-muted fw-medium"
-                                    style={{ fontSize: '0.75rem' }}>
-                                    <div className="d-flex align-items-center gap-2"><span className="border border-secondary border-opacity-25 rounded-circle shadow-sm"
+                                     style={{fontSize: '0.75rem'}}>
+                                    <div className="d-flex align-items-center gap-2"><span
+                                        className="border border-secondary border-opacity-25 rounded-circle shadow-sm"
                                         style={{
                                             width: 12,
                                             height: 12,
                                             background: '#fff'
                                         }}></span> Свободно
                                     </div>
-                                    <div className="d-flex align-items-center gap-2"><span className="rounded-circle shadow-sm" style={{
+                                    <div className="d-flex align-items-center gap-2"><span
+                                        className="rounded-circle shadow-sm" style={{
                                         width: 12,
                                         height: 12,
                                         background: 'var(--primary)'
                                     }}></span> Выбрано
                                     </div>
-                                    <div className="d-flex align-items-center gap-2"><span className="rounded-circle shadow-sm" style={{
+                                    <div className="d-flex align-items-center gap-2"><span
+                                        className="rounded-circle shadow-sm" style={{
                                         width: 12,
                                         height: 12, ...blockedStyle
                                     }}></span> Занято
@@ -452,7 +476,8 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
                                 <div className="row g-3">
                                     <div className="col-6">
                                         <label className="form-label small fw-bold text-muted">Начало</label>
-                                        <select className="form-select custom-input bg-white border-0 shadow-sm rounded-3"
+                                        <select
+                                            className="form-select custom-input bg-white border-0 shadow-sm rounded-3"
                                             value={minsToTime(selStart)}
                                             onChange={e => handleStartTimeSelect(e.target.value)}>
                                             {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -460,68 +485,77 @@ const BookingModal = ({ room, show, onClose, onBookingSuccess }) => {
                                     </div>
                                     <div className="col-6">
                                         <label className="form-label small fw-bold text-muted">Конец</label>
-                                        <select className="form-select custom-input bg-white border-0 shadow-sm rounded-3"
+                                        <select
+                                            className="form-select custom-input bg-white border-0 shadow-sm rounded-3"
                                             value={minsToTime(selEnd)}
                                             onChange={e => handleEndTimeSelect(e.target.value)}>
                                             {TIME_SLOTS.map(t => (
                                                 <option key={t} value={t}
-                                                    disabled={timeToMins(t) <= selStart}>
+                                                        disabled={timeToMins(t) <= selStart}>
                                                     {t}
                                                 </option>
                                             ))}
+                                            <option value="21:30">21:30</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mb-4 text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10">
-                                <label className="form-label small fw-bold text-muted text-uppercase mb-2">Цель встречи</label>
+                            <div
+                                className="mb-4 text-start p-3 bg-light rounded-4 border border-secondary border-opacity-10">
+                                <label className="form-label small fw-bold text-muted text-uppercase mb-2">Цель
+                                    встречи</label>
                                 <textarea className="form-control custom-input bg-white border-0 shadow-sm rounded-3"
-                                    rows="2"
-                                    placeholder="Например: Собеседование"
-                                    value={comment} onChange={e => setComment(e.target.value)} />
+                                          rows="2"
+                                          placeholder="Например: Собеседование"
+                                          value={comment} onChange={e => setComment(e.target.value)}/>
                             </div>
 
                             <button type="submit"
-                                className="btn btn-primary w-100 py-3 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2 transition-all hover-lift fw-bold fs-6"
-                                disabled={loading || hasConflict()}>
+                                    className="btn btn-primary w-100 py-3 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2 transition-all hover-lift fw-bold fs-6"
+                                    disabled={loading || hasConflict()}>
                                 {loading ? <span className="spinner-border spinner-border-sm"></span> : <><Check2Circle
-                                    size={24} /> Подтвердить бронь</>}
+                                    size={24}/> Подтвердить бронь</>}
                             </button>
                         </form>
                     </div>
 
-                    <div className="col-lg-5 p-4 d-none d-lg-block text-start" style={{ backgroundColor: '#fafafa' }}>
-                        <div className="position-sticky" style={{ top: '0' }}>
-                            <img src={room.images && room.images.length > 0 ? room.images[0].image : (room.preview || 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80')}
+                    <div className="col-lg-5 p-4 d-none d-lg-block text-start h-100 overflow-auto" style={{backgroundColor: '#fafafa'}}>
+                        <div className="position-sticky" style={{top: '0'}}>
+                            <img
+                                src={room.images && room.images.length > 0 ? room.images[0].image : (room.preview || 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80')}
                                 className="w-100 rounded-4 shadow-sm mb-4"
-                                style={{ height: '240px', objectFit: 'cover' }} alt={room.name} />
+                                style={{height: '240px', objectFit: 'cover'}} alt={room.name}/>
 
-                            <div className="bg-white p-4 rounded-4 shadow-sm mb-4 border border-secondary border-opacity-10">
+                            <div
+                                className="bg-white p-4 rounded-4 shadow-sm mb-4 border border-secondary border-opacity-10">
                                 <h6 className="fw-bold mb-3 d-flex align-items-center"><InfoCircle
-                                    className="me-2 text-primary" /> Оснащение</h6>
+                                    className="me-2 text-primary"/> Оснащение</h6>
                                 <div className="row g-3">
                                     {room.amenities && room.amenities.map(amenity => (
-                                        <div key={amenity.id} className="col-6 small d-flex align-items-center gap-2 fw-medium text-dark">
+                                        <div key={amenity.id}
+                                             className="col-6 small d-flex align-items-center gap-2 fw-medium text-dark">
                                             {amenity.icon && <i className={`${amenity.icon} text-primary fs-5`}></i>}
                                             {amenity.name}
                                         </div>
                                     ))}
                                     <div className="col-6 small d-flex align-items-center gap-2 fw-medium text-dark">
-                                        <People className="text-primary fs-5" /> до {room.capacity} чел.
+                                        <People className="text-primary fs-5"/> до {room.capacity} чел.
                                     </div>
                                 </div>
                                 {room.description && (
                                     <div className="mt-4 p-3 bg-light rounded-3 border-start border-4 border-primary">
-                                        <div className="text-secondary small fw-medium" style={{ lineHeight: '1.6' }}>
+                                        <div className="text-secondary small fw-medium" style={{lineHeight: '1.6'}}>
                                             {room.description}
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="bg-light p-4 rounded-4 shadow-sm border border-secondary border-opacity-10 mt-4">
-                                <h6 className="fw-medium mb-3 text-muted text-uppercase" style={{ letterSpacing: '0.5px' }}>Итоговая стоимость</h6>
+                            <div
+                                className="bg-light p-4 rounded-4 shadow-sm border border-secondary border-opacity-10 mt-4">
+                                <h6 className="fw-medium mb-3 text-muted text-uppercase"
+                                    style={{letterSpacing: '0.5px'}}>Итоговая стоимость</h6>
                                 <div className="d-flex justify-content-between align-items-end mb-1">
                                     <div className="text-muted small pb-1">
                                         {durationHours} ч. × {room.price_per_hour} ₽/ч
