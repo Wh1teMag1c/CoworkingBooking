@@ -39,7 +39,6 @@ class RoomAdmin(admin.ModelAdmin):
     inlines = [RoomImageInline]
 
 
-# 6. Бронирования
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     list_display = ('id', 'room', 'user', 'start_time', 'end_time', 'status', 'total_price')

@@ -10,7 +10,7 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),  # Подключаем наше API
+    path('api/', include('api.urls')),
 
     # Маршруты для JWT авторизации
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

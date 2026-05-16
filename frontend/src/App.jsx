@@ -1,14 +1,15 @@
 import {Route, Routes} from 'react-router-dom';
-
-const Home = () => <div className="container mt-5"><h1>Добро пожаловать в Коворкинг</h1></div>;
-const Login = () => <div className="container mt-5"><h1>Страница Входа</h1></div>;
+import Navbar from './components/Navbar';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 
 function App() {
     return (
-        <div>
+        <div className="bg-light min-vh-100">
+            <Navbar/>
             <Routes>
-                <Route path="/" element={<Home/>}/>
-                <Route path="/login" element={<Login/>}/>
+                <Route path="/" element={<HomePage/>}/>
+                <Route path="/login" element={<LoginPage/>}/>
             </Routes>
         </div>
     )
