@@ -80,7 +80,8 @@ const HomePage = () => {
     }, [rooms]);
 
     useEffect(() => {
-        setPriceRange([0, maxPossiblePrice]);
+        const maxPrice = maxPossiblePrice;
+        setPriceRange([0, maxPrice]);
     }, [maxPossiblePrice]);
 
     const uniqueAmenities = useMemo(() => {
@@ -453,49 +454,90 @@ const HomePage = () => {
                                      style={{borderRadius: '24px'}}>
                                     <div className="position-relative overflow-hidden">
                                         <img
-                                            src={room.images && room.images.length > 0 ? room.images[0].image : '/placeholder.jpg'}
+                                            src={room.images && room.images.length > 0 ? (room.images[0].image.startsWith('http') ? room.images[0].image : `http://127.0.0.1:8000${room.images[0].image}`) : '/placeholder.jpg'}
                                             className="w-100 transition-transform"
                                             style={{height: '240px', objectFit: 'cover'}}
                                             alt={room.name}
                                         />
                                         <div className="position-absolute top-0 end-0 m-3">
                                             <span
-                                                className="badge bg-white text-dark shadow-sm py-2 px-3 rounded-pill fw-bold">
-                                                👥 до {room.capacity} чел.
+                                                className="badge bg-white text-dark shadow-sm py-2 px-3 rounded-pill fw-bold d-inline-flex align-items-center gap-1">
+                                                <People size={14} className="text-primary"/> до {room.capacity} чел.
                                             </span>
                                         </div>
                                     </div>
                                     <div className="card-body p-4 d-flex flex-column text-start">
-                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                        <div className="mb-2" style={{minHeight: '52px'}}>
                                             <h4 className="card-title mb-0 fw-bold">{room.name}</h4>
-                                            <span
-                                                className="badge bg-primary-soft text-primary px-3 py-2 rounded-pill fw-bold"
-                                                style={{backgroundColor: 'var(--primary-soft)'}}>
-                                                ₽ {room.price_per_hour}/ч
-                                            </span>
                                         </div>
 
-                                        <p className="text-muted small mb-4 d-flex align-items-center gap-1">
-                                            <span className="text-primary fs-5">📍</span> {room.address} •
-                                            Этаж {room.floor}
+                                        <p className="text-muted small mb-3 d-flex align-items-start gap-1 w-100"
+                                           style={{minHeight: '38px'}}>
+                                            <svg className="flex-shrink-0 mt-1" width="14" height="14"
+                                                 viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                                 strokeLinejoin="round">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                                <circle cx="12" cy="10" r="3"></circle>
+                                            </svg>
+                                            <span>
+                                                {room.address} • Этаж {room.floor}
+                                            </span>
                                         </p>
 
-                                        <div className="mb-4">
-                                            {room.amenities && room.amenities.map(amenity => (
+                                        <div className="d-flex flex-wrap gap-2 mb-3">
+                                            {room.average_rating > 0 && (
+                                                <span
+                                                    className="badge border border-secondary border-opacity-15 px-3 py-2 fw-medium d-inline-flex align-items-center gap-2"
+                                                    style={{
+                                                        borderRadius: '12px',
+                                                        backgroundColor: '#fef3c7',
+                                                        color: '#b45309',
+                                                        borderColor: 'rgba(180, 83, 9, 0.15)'
+                                                    }}>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                         stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                                         strokeLinejoin="round"><polygon
+                                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                                    {room.average_rating} Оценка
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="mb-3" style={{minHeight: '32px'}}>
+                                            {room.amenities && room.amenities.slice(0, 3).map(amenity => (
                                                 <span key={amenity.id}
                                                       className="badge bg-light text-muted border border-secondary border-opacity-25 me-2 mb-2 px-2 py-1 fw-normal">
                                                     {amenity.icon && <i className={`${amenity.icon} me-1`}></i>}
                                                     {amenity.name}
                                                 </span>
                                             ))}
+                                            {room.amenities && room.amenities.length > 3 && (
+                                                <span
+                                                    className="badge bg-light text-muted border border-secondary border-opacity-25 mb-2 px-2 py-1 fw-normal">
+                                                    + ещё {room.amenities.length - 3}
+                                                </span>
+                                            )}
                                         </div>
 
-                                        <button
-                                            className="btn btn-outline-primary w-100 fw-bold mt-auto rounded-pill py-2"
-                                            onClick={() => handleBookClick(room)}
-                                        >
-                                            Забронировать
-                                        </button>
+                                        <div
+                                            className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top w-100 gap-2">
+                                            <div>
+                                                <span className="text-muted small d-block" style={{
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '600'
+                                                }}>Цена аренды</span>
+                                                <span
+                                                    className="text-primary fw-800 fs-5">₽ {room.price_per_hour}/ч</span>
+                                            </div>
+                                            <button
+                                                className="btn btn-outline-primary fw-bold rounded-pill py-2 px-4"
+                                                onClick={() => handleBookClick(room)}
+                                                style={{fontSize: '0.9rem'}}
+                                            >
+                                                Забронировать
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

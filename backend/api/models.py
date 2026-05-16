@@ -113,7 +113,7 @@ class Booking(models.Model):
         if self.start_time and self.end_time:
             if self.start_time >= self.end_time:
                 raise ValidationError(_("Начало должно быть раньше конца."))
-            if self.start_time < timezone.now():
+            if not self.pk and self.start_time < timezone.now():
                 raise ValidationError(_("Нельзя бронировать в прошлом."))
 
             overlapping = Booking.objects.filter(

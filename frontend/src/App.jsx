@@ -1,15 +1,24 @@
-import {Route, Routes} from 'react-router-dom';
+import {Navigate, Route, Routes} from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AboutPage from './pages/AboutPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import {useContext} from 'react';
 import {AuthContext} from './context/AuthContext';
 
+const ProtectedRoute = ({children}) => {
+    const {user} = useContext(AuthContext);
+    if (!user) {
+        return <Navigate to="/login" replace/>;
+    }
+    return children;
+};
+
 function App() {
-    const { loading } = useContext(AuthContext);
+    const {loading} = useContext(AuthContext);
 
     if (loading) {
         return (
@@ -30,6 +39,7 @@ function App() {
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/register" element={<RegisterPage/>}/>
                     <Route path="/about" element={<AboutPage/>}/>
+                    <Route path="/bookings" element={<ProtectedRoute><MyBookingsPage/></ProtectedRoute>}/>
                 </Routes>
             </main>
             <Footer/>

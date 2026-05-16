@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from .models import User, Category, Amenity, Room, RoomImage, Booking, Review
 
 
@@ -47,9 +46,18 @@ class RoomSerializer(serializers.ModelSerializer):
         )
 
 
+class BookingRoomSerializer(serializers.ModelSerializer):
+    images = RoomImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ('id', 'name', 'address', 'floor', 'capacity', 'price_per_hour', 'images')
+
+
 class BookingSerializer(serializers.ModelSerializer):
     user_name = serializers.ReadOnlyField(source='user.username')
     room_name = serializers.ReadOnlyField(source='room.name')
+    room_details = BookingRoomSerializer(source='room', read_only=True)
 
     class Meta:
         model = Booking
@@ -57,7 +65,10 @@ class BookingSerializer(serializers.ModelSerializer):
         read_only_fields = ('user',)
 
     def validate(self, data):
-        if data['start_time'] >= data['end_time']:
+        start_time = data.get('start_time', self.instance.start_time if self.instance else None)
+        end_time = data.get('end_time', self.instance.end_time if self.instance else None)
+
+        if start_time and end_time and start_time >= end_time:
             raise serializers.ValidationError("Время начала должно быть раньше времени окончания.")
         return data
 

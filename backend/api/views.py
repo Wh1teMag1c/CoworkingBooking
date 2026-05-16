@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import viewsets, permissions
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from .models import User, Category, Amenity, Room, Booking, Review
 from .serializers import (
@@ -41,7 +43,16 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        try:
+            serializer.save(user=self.request.user)
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
+
+    def perform_update(self, serializer):
+        try:
+            serializer.save()
+        except DjangoValidationError as e:
+            raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
 
     def get_queryset(self):
         queryset = Booking.objects.all()
@@ -49,11 +60,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         if room_id:
             return queryset.filter(room_id=room_id)
         user = self.request.user
-        if user.is_staff or (not user.is_anonymous and user.role == 'manager'):
+        if user.is_anonymous:
+            return Booking.objects.none()
+        show_all = self.request.query_params.get('all')
+        if show_all and (user.is_staff or user.role == 'manager'):
             return queryset
-        if not user.is_anonymous:
-            return queryset.filter(user=user)
-        return Booking.objects.none()
+
+        return queryset.filter(user=user)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
