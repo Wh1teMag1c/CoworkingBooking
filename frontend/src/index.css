@@ -31,7 +31,8 @@ body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     color: var(--text-dark);
     -webkit-font-smoothing: antialiased;
-    scrollbar-gutter: stable;
+    overflow-x: hidden;
+    margin: 0;
 }
 
 .hover-primary {
@@ -75,17 +76,6 @@ body {
     transition: all 0.3s ease;
 }
 
-.user-profile-pill {
-    cursor: pointer;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-soft);
-}
-
-.user-profile-pill:hover {
-    box-shadow: var(--shadow-hover);
-    border-color: rgba(79, 70, 229, 0.15);
-}
 
 .nav-link-custom {
     color: var(--text-muted) !important;
@@ -276,4 +266,26 @@ body {
     border-radius: var(--radius-xl) !important;
     box-shadow: var(--shadow-glass) !important;
     padding: 0.5rem 0;
+}
+
+.bg-gradient-primary-soft {
+    background: linear-gradient(135deg, #f8fafc 0%, var(--primary-soft) 100%);
+}
+
+.badge-soft-success {
+    background-color: #d1fae5 !important;
+    color: #059669 !important;
+}
+
+.tracking-wider {
+    letter-spacing: 0.05em;
+}
+
+.image-hover-zoom {
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.image-hover-zoom:hover {
+    transform: scale(1.03);
+    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.3) !important;
 }

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
-    const { user, logout, loading } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -46,7 +46,7 @@ const Navbar = () => {
                             <polyline points="9 22 9 12 15 12 15 22"></polyline>
                         </svg>
                     </div>
-                    Coworking<span style={{ color: 'var(--primary)' }}>Booking</span>
+                    <span className="text-dark">Coworking</span><span style={{ color: 'var(--primary)' }}>Booking</span>
                 </Link>
 
                 <button className="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
@@ -59,29 +59,25 @@ const Navbar = () => {
                             <Link className="nav-link nav-link-custom" to="/" onClick={handleScrollToTop}>Главная</Link>
                         </li>
                         <li className="nav-item me-3">
-                            <Link className="nav-link nav-link-custom" to="/">О сервисе</Link>
+                            <Link className="nav-link nav-link-custom" to="/about">О сервисе</Link>
                         </li>
                     </ul>
 
                     <div className="d-flex align-items-center mt-3 mt-lg-0" ref={dropdownRef}>
-                        {loading ? (
-                            <div className="d-flex align-items-center p-1 pe-3 bg-light rounded-pill" style={{ width: '170px', height: '46px', border: '1px solid rgba(0,0,0,0.03)' }}>
-                                <div className="rounded-circle bg-secondary bg-opacity-25 placeholder-glow" style={{ width: '38px', height: '38px', flexShrink: 0 }}></div>
-                                <div className="bg-secondary bg-opacity-25 ms-2 rounded placeholder-glow w-100" style={{ height: '12px' }}></div>
-                            </div>
-                        ) : user ? (
+                        {user ? (
                             <div className="position-relative">
                                 <div 
-                                    className="d-flex align-items-center p-1 pe-3 bg-white rounded-pill user-profile-pill" 
+                                    className="d-flex align-items-center gap-2 p-1 px-3 rounded-pill bg-light border shadow-sm transition-all" 
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    style={{ cursor: 'pointer' }}
                                 >
-                                    <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold flex-shrink-0" style={{ width: '38px', height: '38px', fontSize: '16px' }}>
+                                    <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style={{ width: '32px', height: '32px', fontSize: '14px' }}>
                                         {getInitial()}
                                     </div>
-                                    <span className="fw-semibold small text-truncate pe-2" style={{ color: 'var(--text-dark)', maxWidth: '120px' }}>
+                                    <span className="fw-bold small text-truncate pe-1" style={{ color: 'var(--text-dark)', maxWidth: '120px' }}>
                                         {user?.username || 'Пользователь'}
                                     </span>
-                                    <svg className="text-muted flex-shrink-0 ms-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    <svg className="text-muted flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
 
                                 {dropdownOpen && (
