@@ -276,6 +276,16 @@ const BookingModal = ({room, show, onClose, onBookingSuccess}) => {
     const durationHours = (selEnd - selStart) / 60;
     const totalPrice = (durationHours * parseFloat(room.price_per_hour)).toFixed(2);
 
+    const getRoomImageUrl = () => {
+        if (room?.images && room.images.length > 0) {
+            const imgPath = room.images[0].image;
+            if (imgPath) {
+                return imgPath.startsWith('http') ? imgPath : `http://127.0.0.1:8000${imgPath}`;
+            }
+        }
+        return 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80';
+    };
+
     return createPortal(
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
              style={{zIndex: 2000, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)'}}
@@ -356,12 +366,17 @@ const BookingModal = ({room, show, onClose, onBookingSuccess}) => {
 
                                     <div className="d-flex w-100 h-100 position-absolute top-0 start-0"
                                          style={{cursor: 'pointer'}} onMouseDown={handleBackgroundClick}>
-                                        {Array.from({length: 13}).map((_, i) => {
+                                        {Array.from({length: END_HOUR - START_HOUR}).map((_, i) => {
                                             const hour = i + START_HOUR;
                                             const hStr = hour < 10 ? `0${hour}` : hour;
                                             return (
                                                 <div key={hour}
-                                                     className="flex-grow-1 border-end position-relative d-flex flex-column pointer-events-none">
+                                                     className="position-relative d-flex flex-column pointer-events-none"
+                                                     style={{
+                                                         flex: '1 1 0%',
+                                                         boxSizing: 'border-box',
+                                                         borderRight: '1px solid #dee2e6'
+                                                     }}>
                                                     <div className="text-center border-bottom bg-light"
                                                          style={{
                                                              fontSize: '0.65rem',
@@ -520,10 +535,11 @@ const BookingModal = ({room, show, onClose, onBookingSuccess}) => {
                         </form>
                     </div>
 
-                    <div className="col-lg-5 p-4 d-none d-lg-block text-start h-100 overflow-auto" style={{backgroundColor: '#fafafa'}}>
+                    <div className="col-lg-5 p-4 d-none d-lg-block text-start h-100 overflow-auto"
+                         style={{backgroundColor: '#fafafa'}}>
                         <div className="position-sticky" style={{top: '0'}}>
                             <img
-                                src={room.images && room.images.length > 0 ? room.images[0].image : (room.preview || 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80')}
+                                src={getRoomImageUrl()}
                                 className="w-100 rounded-4 shadow-sm mb-4"
                                 style={{height: '240px', objectFit: 'cover'}} alt={room.name}/>
 
