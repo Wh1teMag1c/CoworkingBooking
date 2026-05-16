@@ -380,45 +380,50 @@ const HomePage = () => {
                             </div>
                         </div>
                     ) : filteredRooms.length > 0 ? (
-                        filteredRooms.map((room) => (
-                            <div key={room.id} className="col-md-6 col-lg-4 fade-in">
-                                <div className="card h-100 hover-effect border-0 shadow-sm overflow-hidden" style={{ borderRadius: '24px' }}>
-                                    <div className="position-relative overflow-hidden">
-                                        <img
-                                            src={room.images && room.images.length > 0 ? room.images[0].image : (room.preview || 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80')}
-                                            className="w-100 transition-transform"
-                                            style={{ height: '240px', objectFit: 'cover' }}
-                                            alt={room.name}
-                                        />
-                                        <div className="position-absolute top-0 end-0 m-3">
-                                            <span className="badge bg-white text-dark shadow-sm py-2 px-3 rounded-pill fw-bold">
-                                                👥 до {room.capacity} чел.
-                                            </span>
-                                        </div>
-                                    </div>
+                        filteredRooms.map((room, index) => (
+                            <div key={room.id} className="col-md-6 col-lg-4 fade-in-up" style={{ animationDelay: `${0.3 + index * 0.1}s` }}>
+                                <div className="card h-100 hover-effect">
+                                    <img
+                                        src={room.images && room.images.length > 0 ? room.images[0].image : (room.preview || 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=600&q=80')}
+                                        className="card-img-top"
+                                        alt={room.name}
+                                        style={{ height: '240px', objectFit: 'cover' }}
+                                    />
                                     <div className="card-body p-4 d-flex flex-column text-start">
                                         <div className="d-flex justify-content-between align-items-start mb-3">
                                             <h4 className="card-title mb-0 fw-bold">{room.name}</h4>
-                                            <span className="badge bg-primary-soft text-primary px-3 py-2 rounded-pill fw-bold" style={{ backgroundColor: 'var(--primary-soft)' }}>
-                                                ₽ {room.price_per_hour}/ч
-                                            </span>
+                                            <span className="badge badge-custom badge-soft-primary">₽ {room.price_per_hour}/ч</span>
                                         </div>
 
                                         <p className="text-muted small mb-4 d-flex align-items-center gap-1">
-                                            <span className="text-primary fs-5">📍</span> {room.address} • Этаж {room.floor}
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                            {room.address} • Этаж {room.floor}
                                         </p>
+
+                                        <div className="d-flex flex-wrap gap-2 mb-4 mt-auto">
+                                            <span className="badge badge-custom badge-soft-secondary d-flex align-items-center gap-1">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                                до {room.capacity} чел.
+                                            </span>
+                                            {room.average_rating > 0 && (
+                                                <span className="badge badge-custom badge-soft-warning d-flex align-items-center gap-1">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                                    {room.average_rating}
+                                                </span>
+                                            )}
+                                        </div>
 
                                         <div className="mb-4">
                                             {room.amenities && room.amenities.map(amenity => (
-                                                <span key={amenity.id} className="badge bg-light text-muted border border-secondary border-opacity-25 me-2 mb-2 px-2 py-1 fw-normal">
+                                                <span key={amenity.id} className="badge badge-custom badge-soft-secondary me-2 mb-2">
                                                     {amenity.icon && <i className={`${amenity.icon} me-1`}></i>}
                                                     {amenity.name}
                                                 </span>
                                             ))}
                                         </div>
-
-                                        <button
-                                            className="btn btn-outline-primary w-100 fw-bold mt-auto rounded-pill py-2"
+                                        
+                                        <button 
+                                            className="btn btn-outline-primary w-100 fw-bold mt-auto"
                                             onClick={() => handleBookClick(room)}
                                         >
                                             Забронировать
