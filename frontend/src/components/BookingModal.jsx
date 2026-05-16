@@ -11,14 +11,13 @@ const BookingModal = ({ room, show, onClose }) => {
     const [endTime, setEndTime] = useState('');
     const [attendeesCount, setAttendeesCount] = useState(1);
     const [comment, setComment] = useState('');
-    
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
 
     if (!show) return null;
 
-    // Редирект, если не авторизован
     if (!user) {
         navigate('/login');
         return null;
@@ -80,50 +79,50 @@ const BookingModal = ({ room, show, onClose }) => {
                         ) : (
                             <form onSubmit={handleSubmit}>
                                 {error && <div className="alert alert-danger border-0 shadow-sm">{error}</div>}
-                                
+
                                 <div className="mb-3">
                                     <label className="form-label text-muted small fw-bold">Время начала</label>
-                                    <input 
-                                        type="datetime-local" 
-                                        className="form-control bg-light" 
-                                        value={startTime} 
-                                        onChange={(e) => setStartTime(e.target.value)} 
-                                        required 
+                                    <input
+                                        type="datetime-local"
+                                        className="form-control bg-light"
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                        required
                                     />
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label text-muted small fw-bold">Время окончания</label>
-                                    <input 
-                                        type="datetime-local" 
-                                        className="form-control bg-light" 
-                                        value={endTime} 
-                                        onChange={(e) => setEndTime(e.target.value)} 
-                                        required 
+                                    <input
+                                        type="datetime-local"
+                                        className="form-control bg-light"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                        required
                                     />
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label text-muted small fw-bold">Кол-во участников</label>
-                                    <input 
-                                        type="number" 
-                                        className="form-control bg-light" 
+                                    <input
+                                        type="number"
+                                        className="form-control bg-light"
                                         min="1"
                                         max={room?.capacity || 1}
-                                        value={attendeesCount} 
-                                        onChange={(e) => setAttendeesCount(e.target.value)} 
-                                        required 
+                                        value={attendeesCount}
+                                        onChange={(e) => setAttendeesCount(e.target.value)}
+                                        required
                                     />
                                     <div className="form-text">Максимум {room?.capacity} чел.</div>
                                 </div>
                                 <div className="mb-4">
                                     <label className="form-label text-muted small fw-bold">Комментарий (необязательно)</label>
-                                    <textarea 
-                                        className="form-control bg-light" 
-                                        rows="2" 
-                                        value={comment} 
+                                    <textarea
+                                        className="form-control bg-light"
+                                        rows="2"
+                                        value={comment}
                                         onChange={(e) => setComment(e.target.value)}
                                     ></textarea>
                                 </div>
-                                
+
                                 <button type="submit" className="btn btn-primary w-100 fw-bold" disabled={loading}>
                                     {loading ? (
                                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
