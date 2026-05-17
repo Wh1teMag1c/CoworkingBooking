@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import AboutPage from './pages/AboutPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import ProfilePage from './pages/ProfilePage';
+import AdminPage from './pages/AdminPage';
 import {useContext} from 'react';
 import {AuthContext} from './context/AuthContext';
 
@@ -42,6 +43,7 @@ function App() {
                     <Route path="/about" element={<AboutPage/>}/>
                     <Route path="/bookings" element={<ProtectedRoute><MyBookingsPage/></ProtectedRoute>}/>
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage/></ProtectedRoute>}/>
+                    <Route path="/admin" element={<ProtectedRoute><AdminPage/></ProtectedRoute>}/>
                 </Routes>
             </main>
             <Footer/>

@@ -133,6 +133,21 @@ const Navbar = () => {
                                             </svg>
                                             Мои бронирования
                                         </Link>
+                                        {(user.role === 'admin' || user.role === 'manager' || user.is_staff) && (
+                                            <Link
+                                                className="dropdown-item dropdown-item-custom fw-medium text-muted d-flex align-items-center mt-1"
+                                                to="/admin" onClick={() => setDropdownOpen(false)}>
+                                                <svg className="me-3" width="18" height="18" viewBox="0 0 24 24"
+                                                     fill="none"
+                                                     stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                                     strokeLinejoin="round">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                                                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                                                </svg>
+                                                Админ-панель
+                                            </Link>
+                                        )}
                                         <hr className="dropdown-divider my-2 opacity-10"/>
                                         <button
                                             className="dropdown-item dropdown-item-custom fw-bold text-danger d-flex align-items-center"

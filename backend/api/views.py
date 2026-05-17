@@ -58,9 +58,27 @@ class AmenityViewSet(viewsets.ModelViewSet):
 
 
 class RoomViewSet(viewsets.ModelViewSet):
-    queryset = Room.objects.filter(is_active=True)
+    queryset = Room.objects.all()
     serializer_class = RoomSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Room.objects.all()
+        user = self.request.user
+
+        if user.is_anonymous:
+            return queryset.filter(is_active=True)
+
+        is_privileged = user.is_staff or user.role in ['admin', 'manager']
+
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy'] and is_privileged:
+            return queryset
+
+        show_all = self.request.query_params.get('all')
+        if show_all and is_privileged:
+            return queryset
+
+        return queryset.filter(is_active=True)
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -88,11 +106,18 @@ class BookingViewSet(viewsets.ModelViewSet):
         room_id = self.request.query_params.get('room')
         if room_id:
             return queryset.filter(room_id=room_id)
+
         user = self.request.user
         if user.is_anonymous:
             return Booking.objects.none()
+
+        is_privileged = user.is_staff or user.role in ['admin', 'manager']
+
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy'] and is_privileged:
+            return queryset
+
         show_all = self.request.query_params.get('all')
-        if show_all and (user.is_staff or user.role == 'manager'):
+        if show_all and is_privileged:
             return queryset
 
         return queryset.filter(user=user)

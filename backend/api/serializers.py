@@ -9,12 +9,10 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'username', 'email', 'password', 'first_name', 'last_name', 'role', 'phone_number', 'avatar', 'bio'
+            'id', 'username', 'email', 'password', 'first_name', 'last_name', 'role', 'phone_number', 'avatar', 'bio',
+            'is_staff'
         )
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
+        read_only_fields = ('is_staff',)
 
 
 class CategorySerializer(serializers.ModelSerializer):
