@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User, Category, Amenity, Room, RoomImage, Booking, Review
+from .models import User, Category, Amenity, Room, RoomImage, Booking, Review, Payment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -85,3 +85,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = '__all__'
         read_only_fields = ('user',)
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = '__all__'

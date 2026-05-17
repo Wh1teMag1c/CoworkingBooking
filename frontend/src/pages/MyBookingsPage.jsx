@@ -52,7 +52,7 @@ const MyBookingsPage = () => {
         } catch (err) {
             console.error('Ошибка при загрузке бронирований', err);
         } finally {
-            setLoading(false);
+            loading && setLoading(false);
         }
     };
 
@@ -110,9 +110,15 @@ const MyBookingsPage = () => {
         setPaymentModal(prev => ({...prev, loading: true}));
 
         const id = paymentModal.bookingId;
+        const randomTxId = 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));
-            await api.patch(`bookings/${id}/`, {status: 'confirmed'});
+            await api.post('payments/', {
+                booking: id,
+                amount: paymentModal.price,
+                status: 'success',
+                transaction_id: randomTxId
+            });
             setBookings(bookings.map(b => b.id === id ? {...b, status: 'confirmed'} : b));
             closePaymentModal();
             showToast('Оплата прошла успешно! Бронирование подтверждено.', 'success');

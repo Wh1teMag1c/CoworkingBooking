@@ -141,3 +141,25 @@ class Review(models.Model):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
         unique_together = ('room', 'user')
+
+
+class Payment(models.Model):
+    class Status(models.TextChoices):
+        SUCCESS = 'success', _('Успешно')
+        FAILED = 'failed', _('Ошибка')
+        CANCELED = 'canceled', _('Отменен')
+
+    booking = models.OneToOneField(
+        Booking, on_delete=models.CASCADE, related_name='payment', verbose_name="Бронирование"
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Сумма")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS, verbose_name="Статус")
+    transaction_id = models.CharField(max_length=100, blank=True, verbose_name="ID транзакции")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата оплаты")
+
+    class Meta:
+        verbose_name = 'Платеж'
+        verbose_name_plural = 'Платежи'
+
+    def __str__(self):
+        return f"Платеж {self.amount} ₽ для брони #{self.booking.id}"

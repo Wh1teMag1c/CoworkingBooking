@@ -2,10 +2,10 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import viewsets, permissions
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
-from .models import User, Category, Amenity, Room, Booking, Review
+from .models import User, Category, Amenity, Room, Booking, Review, Payment
 from .serializers import (
     UserSerializer, CategorySerializer, AmenitySerializer,
-    RoomSerializer, BookingSerializer, ReviewSerializer
+    RoomSerializer, BookingSerializer, ReviewSerializer, PaymentSerializer
 )
 
 
@@ -50,7 +50,10 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         try:
-            serializer.save()
+            instance = serializer.save()
+            if instance.status == Booking.Status.CANCELED and hasattr(instance, 'payment'):
+                instance.payment.status = Payment.Status.CANCELED
+                instance.payment.save()
         except DjangoValidationError as e:
             raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
 
@@ -76,3 +79,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        payment = serializer.save()
+        booking = payment.booking
+        booking.status = Booking.Status.CONFIRMED
+        booking.save()
