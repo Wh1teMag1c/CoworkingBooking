@@ -1,4 +1,4 @@
-# CoworkingBooking – Сервис бронирования коворкинг-пространств
+# CoworkingBooking - Сервис бронирования коворкинг-пространств
 
 Современный сервис для бронирования коворкинг-пространств и переговорных комнат. Предоставляет полный цикл работы: просмотр каталога пространств, бронирование с защитой от пересечений, онлайн-оплату и систему отзывов с автоматическим рейтингом.
 
@@ -81,7 +81,7 @@ docker compose exec backend python manage.py seed_data
 - **API Root:** [http://localhost:8080/api/](http://localhost:8080/api/)
 - **Django Admin:** [http://localhost:8080/admin/](http://localhost:8080/admin/)
 
-## API — основные эндпоинты
+## API - основные эндпоинты
 
 | Метод | URL | Доступ | Описание |
 |-------|-----|--------|----------|
@@ -92,7 +92,7 @@ docker compose exec backend python manage.py seed_data
 | `GET` | `/api/rooms/` | Все | Каталог активных пространств |
 | `GET` | `/api/categories/` | Все | Список категорий |
 | `POST` | `/api/bookings/` | Авторизован | Создание бронирования |
-| `GET` | `/api/bookings/` | Авторизован | Мои бронирования (admin — все) |
+| `GET` | `/api/bookings/` | Авторизован | Мои бронирования (admin - все) |
 | `PATCH` | `/api/bookings/{id}/` | Авторизован | Изменение статуса брони |
 | `POST` | `/api/payments/` | Авторизован | Оплата бронирования |
 | `POST` | `/api/reviews/` | Авторизован | Оставить отзыв |
@@ -111,10 +111,10 @@ Authorization: Bearer <access_token>
 docker compose exec backend python manage.py test api
 ```
 
-### `test_views.py` — интеграционные API-тесты (22 теста)
+### `test_views.py` - интеграционные API-тесты (22 теста)
 
 Используется `rest_framework.test.APITestCase`. Покрывают: регистрацию и смену пароля, доступ к каталогу по ролям, полный цикл бронирования с расчётом `total_price`, защиту от некорректных дат и пересечений, платёжный цикл (`Payment` → `confirmed`) и систему отзывов с `average_rating`.
 
-### `test_fuzzing.py` — Property-based тесты / Hypothesis (8 тестов)
+### `test_fuzzing.py` - Property-based тесты / Hypothesis (8 тестов)
 
 Библиотека **Hypothesis** автоматически генерирует сотни случайных входных значений для проверки граничных случаев: сверхдлинные названия, отрицательная вместимость и цена, нулевая длительность брони, бронирование в прошлом, некорректный рейтинг отзыва.
