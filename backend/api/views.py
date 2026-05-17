@@ -6,8 +6,13 @@ from rest_framework.response import Response
 
 from .models import User, Category, Amenity, Room, Booking, Review, Payment
 from .serializers import (
-    UserSerializer, CategorySerializer, AmenitySerializer,
-    RoomSerializer, BookingSerializer, ReviewSerializer, PaymentSerializer
+    UserSerializer,
+    CategorySerializer,
+    AmenitySerializer,
+    RoomSerializer,
+    BookingSerializer,
+    ReviewSerializer,
+    PaymentSerializer,
 )
 
 
@@ -16,33 +21,45 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def get_permissions(self):
-        if self.action == 'create':
+        if self.action == "create":
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticatedOrReadOnly()]
 
-    @action(detail=False, methods=['get', 'patch'], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False,
+        methods=["get", "patch"],
+        permission_classes=[permissions.IsAuthenticated],
+    )
     def me(self, request):
-        if request.method == 'GET':
+        if request.method == "GET":
             serializer = self.get_serializer(request.user)
             return Response(serializer.data)
-        elif request.method == 'PATCH':
-            serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        elif request.method == "PATCH":
+            serializer = self.get_serializer(
+                request.user, data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated],
+    )
     def set_password(self, request):
         user = request.user
-        current_password = request.data.get('current_password')
-        new_password = request.data.get('new_password')
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
 
         if not user.check_password(current_password):
-            raise DRFValidationError({'current_password': ['Неверный текущий пароль.']})
+            raise DRFValidationError(
+                {"current_password": ["Неверный текущий пароль."]}
+            )
 
         user.set_password(new_password)
         user.save()
-        return Response({'status': 'success'})
+        return Response({"status": "success"})
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -69,12 +86,18 @@ class RoomViewSet(viewsets.ModelViewSet):
         if user.is_anonymous:
             return queryset.filter(is_active=True)
 
-        is_privileged = user.is_staff or user.role == 'admin'
+        is_privileged = user.is_staff or user.role == "admin"
+        action_allowed = self.action in [
+            "retrieve",
+            "update",
+            "partial_update",
+            "destroy",
+        ]
 
-        if self.action in ['retrieve', 'update', 'partial_update', 'destroy'] and is_privileged:
+        if action_allowed and is_privileged:
             return queryset
 
-        show_all = self.request.query_params.get('all')
+        show_all = self.request.query_params.get("all")
         if show_all and is_privileged:
             return queryset
 
@@ -90,20 +113,29 @@ class BookingViewSet(viewsets.ModelViewSet):
         try:
             serializer.save(user=self.request.user)
         except DjangoValidationError as e:
-            raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
+            error_msg = (
+                e.message_dict if hasattr(e, "message_dict") else e.messages
+            )
+            raise DRFValidationError(error_msg)
 
     def perform_update(self, serializer):
         try:
             instance = serializer.save()
-            if instance.status == Booking.Status.CANCELED and hasattr(instance, 'payment'):
+            if (
+                    instance.status == Booking.Status.CANCELED
+                    and hasattr(instance, "payment")
+            ):
                 instance.payment.status = Payment.Status.CANCELED
                 instance.payment.save()
         except DjangoValidationError as e:
-            raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
+            error_msg = (
+                e.message_dict if hasattr(e, "message_dict") else e.messages
+            )
+            raise DRFValidationError(error_msg)
 
     def get_queryset(self):
         queryset = Booking.objects.all()
-        room_id = self.request.query_params.get('room')
+        room_id = self.request.query_params.get("room")
         if room_id:
             return queryset.filter(room_id=room_id)
 
@@ -111,12 +143,18 @@ class BookingViewSet(viewsets.ModelViewSet):
         if user.is_anonymous:
             return Booking.objects.none()
 
-        is_privileged = user.is_staff or user.role == 'admin'
+        is_privileged = user.is_staff or user.role == "admin"
+        action_allowed = self.action in [
+            "retrieve",
+            "update",
+            "partial_update",
+            "destroy",
+        ]
 
-        if self.action in ['retrieve', 'update', 'partial_update', 'destroy'] and is_privileged:
+        if action_allowed and is_privileged:
             return queryset
 
-        show_all = self.request.query_params.get('all')
+        show_all = self.request.query_params.get("all")
         if show_all and is_privileged:
             return queryset
 

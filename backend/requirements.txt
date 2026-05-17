@@ -1,0 +1,10 @@
+Django>=4.2,<5.0
+djangorestframework
+djangorestframework-simplejwt
+djoser
+django-cors-headers
+python-dotenv>=1.2.2
+psycopg2-binary
+Pillow
+gunicorn
+requests
