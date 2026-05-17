@@ -74,11 +74,20 @@ const Navbar = () => {
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
                                     style={{cursor: 'pointer'}}
                                 >
-                                    <div
-                                        className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
-                                        style={{width: '32px', height: '32px', fontSize: '14px'}}>
-                                        {getInitial()}
-                                    </div>
+                                    {user?.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt="Avatar"
+                                            className="rounded-circle object-fit-cover flex-shrink-0"
+                                            style={{width: '32px', height: '32px', border: '2px solid white'}}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0 border border-2 border-white"
+                                            style={{width: '32px', height: '32px', fontSize: '14px'}}>
+                                            {getInitial()}
+                                        </div>
+                                    )}
                                     <span className="fw-bold small text-truncate pe-1"
                                           style={{color: 'var(--text-dark)', maxWidth: '120px'}}>
                                         {user?.username || 'Пользователь'}
@@ -102,7 +111,7 @@ const Navbar = () => {
                                         </div>
                                         <Link
                                             className="dropdown-item dropdown-item-custom fw-medium text-muted d-flex align-items-center"
-                                            to="/" onClick={() => setDropdownOpen(false)}>
+                                            to="/profile" onClick={() => setDropdownOpen(false)}>
                                             <svg className="me-3" width="18" height="18" viewBox="0 0 24 24" fill="none"
                                                  stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                                  strokeLinejoin="round">
