@@ -221,7 +221,9 @@ class Command(BaseCommand):
         ]
 
         self.stdout.write(
-            self.style.SUCCESS("Загрузка комнат и привязка локальных изображений...")
+            self.style.SUCCESS(
+                "Загрузка комнат и привязка локальных изображений..."
+            )
         )
         rooms = []
         for data in rooms_data:
@@ -233,7 +235,9 @@ class Command(BaseCommand):
             for am_name in room_amenities:
                 room.amenities.add(amenities[am_name])
 
-            source_path = os.path.join(settings.BASE_DIR, "initial_images", image_filename)
+            source_path = os.path.join(
+                settings.BASE_DIR, "initial_images", image_filename
+            )
 
             if os.path.exists(source_path):
                 try:
@@ -242,19 +246,13 @@ class Command(BaseCommand):
                             room=room,
                             image=File(f, name=image_filename),
                         )
-                    self.stdout.write(f"  [+] Добавлено фото для: {room.name}")
+                    self.stdout.write(f"  [+] Добавлено фото: {room.name}")
                 except Exception as e:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"  [-] Ошибка обработки файла для {room.name}: {e}"
-                        )
-                    )
+                    err_msg = f"  [-] Ошибка обработки для {room.name}: {e}"
+                    self.stdout.write(self.style.WARNING(err_msg))
             else:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"  [-] Файл не найден: {source_path}"
-                    )
-                )
+                warn_msg = f"  [-] Файл не найден: {source_path}"
+                self.stdout.write(self.style.WARNING(warn_msg))
 
             rooms.append(room)
 
