@@ -24,7 +24,6 @@ jobs:
             cd CoworkingBooking
             git pull origin main
             
-            # Генерация файла .env (добавили переменную POSTGRES_DB)
             echo "POSTGRES_NAME=coworking_db" > .env
             echo "POSTGRES_DB=coworking_db" >> .env
             echo "POSTGRES_USER=postgres" >> .env

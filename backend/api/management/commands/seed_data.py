@@ -1,9 +1,9 @@
+import os
 import random
 import uuid
 from datetime import timedelta
 from decimal import Decimal
 
-import requests
 from api.models import (
     Amenity,
     Booking,
@@ -14,7 +14,8 @@ from api.models import (
     RoomImage,
     User,
 )
-from django.core.files.base import ContentFile
+from django.conf import settings
+from django.core.files import File
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -134,15 +135,12 @@ class Command(BaseCommand):
                 "capacity": 4,
                 "price_per_hour": Decimal("1500.00"),
                 "description": (
-                    "Уютная комната для 1-1 встреч и видеозвонков. "
+                    "Уютная комната для 1-1 встреч и videoзвонков. "
                     "Отличная звукоизоляция и панорамный вид на Москву-реку. "
                     "Пожалуйста, не выносите пульты от ТВ."
                 ),
                 "amenities": ["Wi-Fi", "ТВ", "Маркерная доска"],
-                "image_url": (
-                    "https://images.unsplash.com/photo-1517502884422-"
-                    "41eaead166d4?auto=format&fit=crop&q=80&w=1000"
-                ),
+                "image_filename": "room1.jpg",
             },
             {
                 "name": "Конференц-зал «Орбита»",
@@ -161,10 +159,7 @@ class Command(BaseCommand):
                     "Маркерная доска",
                     "Кофемашина",
                 ],
-                "image_url": (
-                    "https://images.unsplash.com/photo-1431540015161-"
-                    "0bf868a2d407?auto=format&fit=crop&q=80&w=1000"
-                ),
+                "image_filename": "room2.jpg",
             },
             {
                 "name": "Open Space «Нева»",
@@ -179,10 +174,7 @@ class Command(BaseCommand):
                     "Просьба соблюдать комфортный уровень шума."
                 ),
                 "amenities": ["Wi-Fi", "ТВ", "Маркерная доска", "Кофемашина"],
-                "image_url": (
-                    "https://images.unsplash.com/photo-1522071820081-"
-                    "009f0129c71c?auto=format&fit=crop&q=80&w=1000"
-                ),
+                "image_filename": "room3.jpg",
             },
             {
                 "name": "Переговорная «Зилант»",
@@ -196,10 +188,7 @@ class Command(BaseCommand):
                     "Запасные маркеры лежат в нижнем ящике тумбы."
                 ),
                 "amenities": ["Wi-Fi", "ТВ", "Маркерная доска"],
-                "image_url": (
-                    "https://images.unsplash.com/photo-1505409859467-"
-                    "3a796fd5798e?auto=format&fit=crop&q=80&w=1000"
-                ),
+                "image_filename": "room4.jpg",
             },
             {
                 "name": "Зал «Аврора»",
@@ -213,10 +202,7 @@ class Command(BaseCommand):
                     "выдаются на главном ресепшене под роспись."
                 ),
                 "amenities": ["Wi-Fi", "Проектор", "ТВ"],
-                "image_url": (
-                    "https://images.unsplash.com/photo-1552664730-d307ca884978"
-                    "?auto=format&fit=crop&q=80&w=1000"
-                ),
+                "image_filename": "room5.jpg",
             },
             {
                 "name": "Переговорная «Урал»",
@@ -230,19 +216,16 @@ class Command(BaseCommand):
                     "Идеально подходит для встреч с ключевыми клиентами."
                 ),
                 "amenities": ["Wi-Fi", "Кофемашина", "Маркерная доска"],
-                "image_url": (
-                    "https://images.unsplash.com/photo-1497366216548-"
-                    "37526070297c?auto=format&fit=crop&q=80&w=1000"
-                ),
+                "image_filename": "room6.jpg",
             },
         ]
 
         self.stdout.write(
-            self.style.SUCCESS("Загрузка комнат и скачивание изображений...")
+            self.style.SUCCESS("Загрузка комнат и привязка локальных изображений...")
         )
         rooms = []
         for data in rooms_data:
-            image_url = data.pop("image_url")
+            image_filename = data.pop("image_filename")
             room_amenities = data.pop("amenities")
 
             room = Room.objects.create(is_active=True, **data)
@@ -250,19 +233,26 @@ class Command(BaseCommand):
             for am_name in room_amenities:
                 room.amenities.add(amenities[am_name])
 
-            try:
-                response = requests.get(image_url, timeout=10)
-                if response.status_code == 200:
-                    file_name = f"room_{room.id}.jpg"
-                    RoomImage.objects.create(
-                        room=room,
-                        image=ContentFile(response.content, name=file_name),
+            source_path = os.path.join(settings.BASE_DIR, "initial_images", image_filename)
+
+            if os.path.exists(source_path):
+                try:
+                    with open(source_path, "rb") as f:
+                        RoomImage.objects.create(
+                            room=room,
+                            image=File(f, name=image_filename),
+                        )
+                    self.stdout.write(f"  [+] Добавлено фото для: {room.name}")
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  [-] Ошибка обработки файла для {room.name}: {e}"
+                        )
                     )
-                    self.stdout.write(f"  [+] Скачано фото для: {room.name}")
-            except Exception as e:
+            else:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"  [-] Ошибка загрузки фото для {room.name}: {e}"
+                        f"  [-] Файл не найден: {source_path}"
                     )
                 )
 
