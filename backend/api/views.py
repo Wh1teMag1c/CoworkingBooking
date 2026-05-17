@@ -1,18 +1,26 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework import viewsets, permissions
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
 
-from .models import User, Category, Amenity, Room, Booking, Review, Payment
+from .models import (
+    Amenity,
+    Booking,
+    Category,
+    Payment,
+    Review,
+    Room,
+    User,
+)
 from .serializers import (
-    UserSerializer,
-    CategorySerializer,
     AmenitySerializer,
-    RoomSerializer,
     BookingSerializer,
-    ReviewSerializer,
+    CategorySerializer,
     PaymentSerializer,
+    ReviewSerializer,
+    RoomSerializer,
+    UserSerializer,
 )
 
 
@@ -23,7 +31,17 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [permissions.AllowAny()]
+        if self.action in ["me", "set_password"]:
+            return [permissions.IsAuthenticated()]
         return [permissions.IsAuthenticatedOrReadOnly()]
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        if instance.is_superuser and self.request.user != instance:
+            raise DRFValidationError(
+                {"detail": ["Запрещено изменять права создателя платформы."]}
+            )
+        serializer.save()
 
     @action(
         detail=False,
@@ -65,19 +83,31 @@ class UserViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class AmenityViewSet(viewsets.ModelViewSet):
     queryset = Amenity.objects.all()
     serializer_class = AmenitySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
     def get_queryset(self):
         queryset = Room.objects.all()
@@ -167,7 +197,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        room = serializer.validated_data["room"]
+        user = self.request.user
+        if Review.objects.filter(room=room, user=user).exists():
+            raise DRFValidationError({"detail": "Отзыв уже существует."})
+        serializer.save(user=user)
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
