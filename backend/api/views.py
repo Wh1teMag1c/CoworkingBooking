@@ -69,7 +69,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         if user.is_anonymous:
             return queryset.filter(is_active=True)
 
-        is_privileged = user.is_staff or user.role in ['admin', 'manager']
+        is_privileged = user.is_staff or user.role == 'admin'
 
         if self.action in ['retrieve', 'update', 'partial_update', 'destroy'] and is_privileged:
             return queryset
@@ -111,7 +111,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         if user.is_anonymous:
             return Booking.objects.none()
 
-        is_privileged = user.is_staff or user.role in ['admin', 'manager']
+        is_privileged = user.is_staff or user.role == 'admin'
 
         if self.action in ['retrieve', 'update', 'partial_update', 'destroy'] and is_privileged:
             return queryset

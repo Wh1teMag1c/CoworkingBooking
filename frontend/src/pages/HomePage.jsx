@@ -18,6 +18,8 @@ import {
     StarFill
 } from 'react-bootstrap-icons';
 
+import homeHeroImg from '../assets/home-hero.jpg';
+
 const HomePage = () => {
     const navigate = useNavigate();
     const filterSectionRef = useRef(null);
@@ -261,8 +263,9 @@ const HomePage = () => {
                         </div>
                         <div className="col-lg-6">
                             <div className="hero-image-container">
+                                {/* Подставляем локальное изображение через переменную */}
                                 <img
-                                    src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1000&q=80"
+                                    src={homeHeroImg}
                                     alt="Modern coworking"
                                     className="hero-image"
                                 />

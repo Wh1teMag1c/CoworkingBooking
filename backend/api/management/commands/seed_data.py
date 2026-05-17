@@ -1,34 +1,43 @@
 import random
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
 import requests
-from api.models import User, Category, Amenity, Room, RoomImage, Booking
+from api.models import User, Category, Amenity, Room, RoomImage, Booking, Review, Payment
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 
 class Command(BaseCommand):
-    help = 'Заполняет БД начальными данными: категории, удобства, комнаты с фото и бронирования'
+    help = 'Заполняет БД начальными данными'
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING('Очистка старых данных...'))
+        Payment.objects.all().delete()
+        Review.objects.all().delete()
         Booking.objects.all().delete()
         RoomImage.objects.all().delete()
         Room.objects.all().delete()
         Category.objects.all().delete()
         Amenity.objects.all().delete()
-        User.objects.filter(is_staff=False).delete()
+        User.objects.filter(is_superuser=False).delete()
 
         self.stdout.write(self.style.SUCCESS('Создание тестовых пользователей...'))
         test_users_data = [
-            {'username': 'dmitry_dev', 'email': 'dmitry@example.com', 'first': 'Дмитрий', 'last': 'Иванов'},
-            {'username': 'anna_qa', 'email': 'anna@example.com', 'first': 'Анна', 'last': 'Смирнова'},
-            {'username': 'alex_pm', 'email': 'alex@example.com', 'first': 'Алексей', 'last': 'Петров'},
+            {'username': 'dmitry_dev', 'email': 'dmitry@example.com', 'first': 'Дмитрий', 'last': 'Иванов',
+             'role': 'client', 'is_staff': False},
+            {'username': 'anna_qa', 'email': 'anna@example.com', 'first': 'Анна', 'last': 'Смирнова', 'role': 'client',
+             'is_staff': False},
+            {'username': 'alex_pm', 'email': 'alex@example.com', 'first': 'Алексей', 'last': 'Петров', 'role': 'client',
+             'is_staff': False},
+            {'username': 'admin_ivan', 'email': 'admin_ivan@example.com', 'first': 'Иван', 'last': 'Админов',
+             'role': 'admin', 'is_staff': True},
         ]
 
         users = []
+        clients = []
         for u_data in test_users_data:
             user, created = User.objects.get_or_create(
                 username=u_data['username'],
@@ -36,13 +45,16 @@ class Command(BaseCommand):
                     'email': u_data['email'],
                     'first_name': u_data['first'],
                     'last_name': u_data['last'],
-                    'role': 'client'
+                    'role': u_data['role'],
+                    'is_staff': u_data['is_staff']
                 }
             )
             if created:
                 user.set_password('password123')
                 user.save()
             users.append(user)
+            if user.role == 'client':
+                clients.append(user)
 
         self.stdout.write(self.style.SUCCESS('Создание категорий...'))
         categories = {
@@ -156,7 +168,7 @@ class Command(BaseCommand):
 
             rooms.append(room)
 
-        self.stdout.write(self.style.SUCCESS('Генерация бронирований...'))
+        self.stdout.write(self.style.SUCCESS('Генерация бронирований, платежей и отзывов...'))
         notes = [
             "Синхронизация команды", "Собеседование с кандидатом",
             "Презентация заказчику", "Планирование спринта",
@@ -165,10 +177,17 @@ class Command(BaseCommand):
 
         base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
 
-        for day_offset in range(1, 5):
-            current_day = base_time + timedelta(days=day_offset)
+        for room in rooms:
+            reviewers = random.sample(clients, random.randint(2, len(clients)))
+            for reviewer in reviewers:
+                Review.objects.create(
+                    room=room,
+                    user=reviewer,
+                    rating=random.choices([4, 5], weights=[30, 70])[0]
+                )
 
-            for room in rooms:
+            for day_offset in range(-2, 5):
+                current_day = base_time + timedelta(days=day_offset)
                 num_meetings = random.randint(1, 3)
                 busy_hours = set()
 
@@ -181,15 +200,30 @@ class Command(BaseCommand):
                     start_time = current_day.replace(hour=hour)
                     end_time = start_time + timedelta(hours=random.choice([1, 2]))
 
+                    if end_time < timezone.now():
+                        status = 'finished'
+                    else:
+                        status = random.choices(['confirmed', 'pending'], weights=[80, 20])[0]
+
                     booking = Booking(
-                        user=random.choice(users),
+                        user=random.choice(clients),
                         room=room,
                         start_time=start_time,
                         end_time=end_time,
                         attendees_count=random.randint(2, room.capacity),
-                        status='confirmed',
-                        comment=random.choice(notes)
+                        status=status,
+                        comment=random.choice(notes) if random.random() > 0.3 else ''
                     )
+
+                    booking.full_clean = lambda *args, **kwargs: None
                     booking.save()
+
+                    if status in ['confirmed', 'finished']:
+                        Payment.objects.create(
+                            booking=booking,
+                            amount=booking.total_price,
+                            status='success',
+                            transaction_id=f"TXN-{uuid.uuid4().hex[:8].upper()}"
+                        )
 
         self.stdout.write(self.style.SUCCESS('Готово! База данных успешно заполнена.'))

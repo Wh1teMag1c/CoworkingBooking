@@ -11,7 +11,6 @@ from django.utils.translation import gettext_lazy as _
 class User(AbstractUser):
     class Roles(models.TextChoices):
         CLIENT = 'client', _('Клиент')
-        MANAGER = 'manager', _('Менеджер')
         ADMIN = 'admin', _('Администратор')
 
     role = models.CharField(

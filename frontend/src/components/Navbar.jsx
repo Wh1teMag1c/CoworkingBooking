@@ -133,7 +133,7 @@ const Navbar = () => {
                                             </svg>
                                             Мои бронирования
                                         </Link>
-                                        {(user.role === 'admin' || user.role === 'manager' || user.is_staff) && (
+                                        {(user.role === 'admin' || user.is_staff) && (
                                             <Link
                                                 className="dropdown-item dropdown-item-custom fw-medium text-muted d-flex align-items-center mt-1"
                                                 to="/admin" onClick={() => setDropdownOpen(false)}>

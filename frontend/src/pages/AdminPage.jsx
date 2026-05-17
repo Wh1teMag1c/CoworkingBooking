@@ -103,6 +103,11 @@ const AdminPage = () => {
     };
 
     const handleToggleUserAdmin = async (targetUser, makeAdmin) => {
+        if (targetUser.is_superuser) {
+            showToast('К сожалению, изменение прав главного создателя заблокировано.', 'error');
+            return;
+        }
+
         try {
             const payload = makeAdmin
                 ? {role: 'admin', is_staff: true}
@@ -145,7 +150,7 @@ const AdminPage = () => {
         setBookingsPage(1);
     };
 
-    const isUserAdmin = (u) => u.role === 'admin' || u.role === 'manager' || u.is_staff === true;
+    const isUserAdmin = (u) => u.role === 'admin' || u.is_staff === true;
 
     const filteredUsers = users.filter(u => {
         if (userFilter === 'admin') return isUserAdmin(u);
@@ -609,7 +614,7 @@ const AdminPage = () => {
                                 <button
                                     className={`btn rounded-pill px-4 py-2 fw-bold transition-all ${userFilter === 'admin' ? 'btn-white bg-white shadow-sm text-dark' : 'btn-light text-muted border-0'}`}
                                     onClick={() => setUserFilter('admin')}>
-                                    Менеджеры и Админы
+                                    Администраторы
                                     ({users.filter(u => isUserAdmin(u)).length})
                                 </button>
                             </div>
@@ -675,7 +680,7 @@ const AdminPage = () => {
                                                                       border: '1px solid rgba(102, 16, 242, 0.2)'
                                                                   }}>
                                                                     <ShieldLockFill
-                                                                        className="me-1"/> {u.is_staff ? 'Админ' : (u.role === 'admin' ? 'Админ' : 'Менеджер')}
+                                                                        className="me-1"/> {u.is_superuser ? 'Главный Админ' : 'Админ'}
                                                             </span>
                                                         ) : (
                                                             <span
@@ -684,7 +689,7 @@ const AdminPage = () => {
                                                             </span>
                                                         )}
 
-                                                        {u.id !== currentUser?.id && (
+                                                        {u.id !== currentUser?.id && !u.is_superuser && (
                                                             <button
                                                                 className={`btn btn-sm ${isUserAdmin(u) ? 'btn-outline-danger' : 'btn-outline-success'} rounded-circle p-2 d-flex align-items-center justify-content-center hover-lift`}
                                                                 style={{width: '36px', height: '36px'}}
