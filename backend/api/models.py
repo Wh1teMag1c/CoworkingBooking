@@ -65,9 +65,7 @@ class Room(models.Model):
     floor = models.IntegerField(verbose_name="Этаж", default=1)
     capacity = models.PositiveIntegerField(verbose_name="Вместимость (чел.)")
     price_per_hour = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Цена в час")
-
     amenities = models.ManyToManyField(Amenity, blank=True, related_name="rooms", verbose_name="Удобства")
-
     description = models.TextField(blank=True, verbose_name="Описание")
     is_active = models.BooleanField(default=True, verbose_name="Доступна")
 
@@ -98,14 +96,11 @@ class Booking(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings', verbose_name="Пользователь")
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='bookings', verbose_name="Комната")
-
     start_time = models.DateTimeField(verbose_name="Время начала")
     end_time = models.DateTimeField(verbose_name="Время окончания")
-
     attendees_count = models.PositiveIntegerField(default=1, verbose_name="Кол-во участников")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, verbose_name="Статус")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False, null=True, verbose_name="Итого")
-
     comment = models.TextField(blank=True, verbose_name="Комментарий")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -140,7 +135,6 @@ class Review(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='reviews', verbose_name="Комната")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews', verbose_name="Пользователь")
     rating = models.PositiveSmallIntegerField(choices=[(i, i) for i in range(1, 6)], verbose_name="Оценка")
-    comment = models.TextField(verbose_name="Комментарий")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

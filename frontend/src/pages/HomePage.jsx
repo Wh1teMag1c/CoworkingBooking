@@ -11,9 +11,11 @@ import {
     Check2Circle,
     ExclamationCircleFill,
     Funnel,
+    GeoAlt,
     Layers,
     People,
-    Search
+    Search,
+    StarFill
 } from 'react-bootstrap-icons';
 
 const HomePage = () => {
@@ -29,6 +31,7 @@ const HomePage = () => {
     const [capacityFilter, setCapacityFilter] = useState('');
     const [levelFilter, setLevelFilter] = useState('');
     const [selectedAmenities, setSelectedAmenities] = useState([]);
+    const [sortBy, setSortBy] = useState('default');
 
     const [priceRange, setPriceRange] = useState([0, 5000]);
 
@@ -38,12 +41,17 @@ const HomePage = () => {
     const [showSuccessToast, setShowSuccessToast] = useState(false);
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const sortDropdownRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
+            }
+            if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
+                setIsSortDropdownOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -133,8 +141,16 @@ const HomePage = () => {
             });
         }
 
+        if (sortBy === 'rating') {
+            result.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+        } else if (sortBy === 'price_asc') {
+            result.sort((a, b) => parseFloat(a.price_per_hour) - parseFloat(b.price_per_hour));
+        } else if (sortBy === 'price_desc') {
+            result.sort((a, b) => parseFloat(b.price_per_hour) - parseFloat(a.price_per_hour));
+        }
+
         return result;
-    }, [rooms, activeCategory, searchTerm, capacityFilter, priceRange, levelFilter, selectedAmenities, maxPossiblePrice]);
+    }, [rooms, activeCategory, searchTerm, capacityFilter, priceRange, levelFilter, selectedAmenities, maxPossiblePrice, sortBy]);
 
     const handleBookClick = (room) => {
         const token = localStorage.getItem('access') || localStorage.getItem('access_token');
@@ -167,6 +183,7 @@ const HomePage = () => {
         setPriceRange([0, maxPossiblePrice]);
         setLevelFilter('');
         setSelectedAmenities([]);
+        setSortBy('default');
     };
 
     const toggleAmenity = (id) => {
@@ -175,7 +192,14 @@ const HomePage = () => {
         );
     };
 
-    const isFiltered = searchTerm || activeCategory || capacityFilter || priceRange[0] > 0 || priceRange[1] < maxPossiblePrice || levelFilter || selectedAmenities.length > 0;
+    const sortOptions = [
+        {value: 'default', label: 'Сортировка по умолчанию'},
+        {value: 'rating', label: 'По высокому рейтингу'},
+        {value: 'price_asc', label: 'Сначала дешевле'},
+        {value: 'price_desc', label: 'Сначала дороже'}
+    ];
+
+    const isFiltered = searchTerm || activeCategory || capacityFilter || priceRange[0] > 0 || priceRange[1] < maxPossiblePrice || levelFilter || selectedAmenities.length > 0 || sortBy !== 'default';
 
     if (loading) {
         return (
@@ -267,18 +291,51 @@ const HomePage = () => {
             <div className="container py-5">
                 <div ref={filterSectionRef} className="filter-card mb-5 border-0 shadow-lg p-4 p-md-5 rounded-4"
                      style={{borderRadius: '24px'}}>
-                    <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                        <h5 className="fw-bold d-flex align-items-center mb-0 text-start text-dark">
-                            <Funnel className="me-2 text-primary"/> Подбор помещения
+                    <div
+                        className="d-flex justify-content-between align-items-start flex-wrap gap-3 border-bottom pb-3 mb-4">
+                        <div className="d-flex align-items-center flex-wrap gap-3">
+                            <h5 className="fw-bold d-flex align-items-center mb-0 text-dark">
+                                <Funnel className="me-2 text-primary"/> Подбор помещения
+                            </h5>
                             <span
-                                className="ms-3 badge bg-light text-primary border border-secondary border-opacity-25 fw-normal py-2 px-3 rounded-pill"
+                                className="badge bg-light text-primary border border-secondary border-opacity-25 fw-normal py-2 px-3 rounded-pill"
                                 style={{fontSize: '0.8rem'}}>
                                 Найдено: {filteredRooms.length}
                             </span>
-                        </h5>
+
+                            <div className="dropdown" ref={sortDropdownRef}>
+                                <button
+                                    className="btn rounded-pill px-4 py-2 fw-bold transition-all btn-light text-muted border border-secondary border-opacity-25 d-flex justify-content-between align-items-center"
+                                    type="button"
+                                    onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                                    style={{minWidth: '240px', fontSize: '0.8rem'}}>
+                                    <span>{sortOptions.find(opt => opt.value === sortBy)?.label}</span>
+                                    <span className="text-muted ms-3" style={{fontSize: '10px'}}>▼</span>
+                                </button>
+                                <ul className={`dropdown-menu shadow-lg border-0 mt-2 p-3 fade-in ${isSortDropdownOpen ? 'show' : ''}`}
+                                    style={{
+                                        borderRadius: '16px',
+                                        minWidth: '240px',
+                                        display: isSortDropdownOpen ? 'block' : 'none'
+                                    }}>
+                                    {sortOptions.map(option => (
+                                        <li key={option.value} onClick={() => {
+                                            setSortBy(option.value);
+                                            setIsSortDropdownOpen(false);
+                                        }} style={{cursor: 'pointer'}}>
+                                            <div
+                                                className={`p-2 rounded-3 small fw-medium transition-all d-flex align-items-center justify-content-between ${sortBy === option.value ? 'bg-primary bg-opacity-10 text-primary fw-bold' : 'text-dark bg-light-hover'}`}>
+                                                <span>{option.label}</span>
+                                                {sortBy === option.value && <Check2 size={16}/>}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
                         {isFiltered && (
                             <button
-                                className="btn btn-link text-primary p-0 text-decoration-none small fw-bold fade-in d-flex align-items-center"
+                                className="btn btn-link text-primary p-0 text-decoration-none small fw-bold fade-in d-flex align-items-center mt-1"
                                 onClick={resetFilters}>
                                 <ArrowCounterclockwise className="me-1"/> Сбросить все
                             </button>
@@ -450,8 +507,9 @@ const HomePage = () => {
                         filteredRooms.map((room, index) => (
                             <div key={room.id} className="col-md-6 col-lg-4 fade-in-up"
                                  style={{animationDelay: `${0.3 + index * 0.1}s`}}>
-                                <div className="card h-100 hover-effect border-0 shadow-sm overflow-hidden"
-                                     style={{borderRadius: '24px'}}>
+                                <div
+                                    className="card h-100 hover-effect border-0 shadow-sm overflow-hidden d-flex flex-column"
+                                    style={{borderRadius: '24px'}}>
                                     <div className="position-relative overflow-hidden">
                                         <img
                                             src={room.images && room.images.length > 0 ? (room.images[0].image.startsWith('http') ? room.images[0].image : `http://127.0.0.1:8000${room.images[0].image}`) : '/placeholder.jpg'}
@@ -459,6 +517,17 @@ const HomePage = () => {
                                             style={{height: '240px', objectFit: 'cover'}}
                                             alt={room.name}
                                         />
+
+                                        {room.average_rating > 0 && (
+                                            <div className="position-absolute top-0 start-0 m-3">
+                                                <span
+                                                    className="badge bg-white shadow-sm py-2 px-3 rounded-pill fw-bold d-inline-flex align-items-center gap-1"
+                                                    style={{color: '#b45309'}}>
+                                                    <StarFill size={14} className="text-warning"/> {room.average_rating}
+                                                </span>
+                                            </div>
+                                        )}
+
                                         <div className="position-absolute top-0 end-0 m-3">
                                             <span
                                                 className="badge bg-white text-dark shadow-sm py-2 px-3 rounded-pill fw-bold d-inline-flex align-items-center gap-1">
@@ -466,43 +535,28 @@ const HomePage = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="card-body p-4 d-flex flex-column text-start">
+                                    <div className="card-body p-4 d-flex flex-column text-start flex-grow-1">
                                         <div className="mb-2" style={{minHeight: '52px'}}>
-                                            <h4 className="card-title mb-0 fw-bold">{room.name}</h4>
+                                            <h4 className="card-title mb-0 fw-bold" style={{
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden'
+                                            }} title={room.name}>{room.name}</h4>
                                         </div>
 
-                                        <p className="text-muted small mb-3 d-flex align-items-start gap-1 w-100"
-                                           style={{minHeight: '38px'}}>
-                                            <svg className="flex-shrink-0 mt-1" width="14" height="14"
-                                                 viewBox="0 0 24 24" fill="none"
-                                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                                                 strokeLinejoin="round">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                                <circle cx="12" cy="10" r="3"></circle>
-                                            </svg>
-                                            <span>
+                                        <p className="text-muted small mb-4 d-flex align-items-start gap-2 flex-grow-1"
+                                           style={{minHeight: '40px'}}>
+                                            <GeoAlt className="flex-shrink-0 mt-1 text-primary" size={14}/>
+                                            <span style={{
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden'
+                                            }} title={`${room.address} • Этаж ${room.floor}`}>
                                                 {room.address} • Этаж {room.floor}
                                             </span>
                                         </p>
-
-                                        <div className="d-flex flex-wrap gap-2 mb-3">
-                                            {room.average_rating > 0 && (
-                                                <span
-                                                    className="badge border border-secondary border-opacity-15 px-3 py-2 fw-medium d-inline-flex align-items-center gap-2"
-                                                    style={{
-                                                        borderRadius: '12px',
-                                                        backgroundColor: '#fef3c7',
-                                                        color: '#b45309',
-                                                        borderColor: 'rgba(180, 83, 9, 0.15)'
-                                                    }}>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                                         stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                                                         strokeLinejoin="round"><polygon
-                                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                                                    {room.average_rating} Оценка
-                                                </span>
-                                            )}
-                                        </div>
 
                                         <div className="mb-3" style={{minHeight: '32px'}}>
                                             {room.amenities && room.amenities.slice(0, 3).map(amenity => (

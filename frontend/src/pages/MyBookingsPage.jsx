@@ -16,6 +16,8 @@ import {
     HourglassSplit,
     JournalText,
     People,
+    Star,
+    StarFill,
     XCircle
 } from 'react-bootstrap-icons';
 
@@ -23,8 +25,10 @@ const MyBookingsPage = () => {
     const [bookings, setBookings] = useState([]);
     const [filter, setFilter] = useState('active');
     const [loading, setLoading] = useState(true);
+
     const [cancelModal, setCancelModal] = useState({show: false, bookingId: null});
     const [paymentModal, setPaymentModal] = useState({show: false, bookingId: null, price: null, loading: false});
+    const [reviewModal, setReviewModal] = useState({show: false, room: null, roomName: '', rating: 5, loading: false});
     const [toast, setToast] = useState({show: false, message: '', type: 'success'});
 
     const [cardNumber, setCardNumber] = useState('');
@@ -57,13 +61,8 @@ const MyBookingsPage = () => {
         fetchMyBookings();
     }, []);
 
-    const openCancelModal = (id) => {
-        setCancelModal({show: true, bookingId: id});
-    };
-
-    const closeCancelModal = () => {
-        setCancelModal({show: false, bookingId: null});
-    };
+    const openCancelModal = (id) => setCancelModal({show: true, bookingId: id});
+    const closeCancelModal = () => setCancelModal({show: false, bookingId: null});
 
     const openPaymentModal = (id, price) => {
         setCardNumber('');
@@ -71,12 +70,18 @@ const MyBookingsPage = () => {
         setCardCvc('');
         setPaymentModal({show: true, bookingId: id, price: price, loading: false});
     };
-
     const closePaymentModal = () => {
         setCardNumber('');
         setCardExpiry('');
         setCardCvc('');
         setPaymentModal({show: false, bookingId: null, price: null, loading: false});
+    };
+
+    const openReviewModal = (roomObj) => {
+        setReviewModal({show: true, room: roomObj.room, roomName: roomObj.room_name, rating: 5, loading: false});
+    };
+    const closeReviewModal = () => {
+        setReviewModal({show: false, room: null, roomName: '', rating: 5, loading: false});
     };
 
     const confirmCancel = async () => {
@@ -114,6 +119,27 @@ const MyBookingsPage = () => {
         } catch (err) {
             alert('Ошибка при проведении платежа');
             setPaymentModal(prev => ({...prev, loading: false}));
+        }
+    };
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        setReviewModal(prev => ({...prev, loading: true}));
+        try {
+            await api.post('reviews/', {
+                room: reviewModal.room,
+                rating: reviewModal.rating
+            });
+            showToast('Спасибо! Ваша оценка успешно сохранена.', 'success');
+            setBookings(bookings.map(b => b.room === reviewModal.room ? {...b, is_reviewed: true} : b));
+            closeReviewModal();
+        } catch (err) {
+            if (err.response && err.response.status === 400) {
+                showToast('Вы уже оставляли оценку для этой комнаты.', 'error');
+            } else {
+                showToast('Произошла ошибка при сохранении оценки.', 'error');
+            }
+            setReviewModal(prev => ({...prev, loading: false}));
         }
     };
 
@@ -173,13 +199,15 @@ const MyBookingsPage = () => {
                     className="position-fixed top-0 end-0 m-4 p-3 bg-white shadow-lg border-start border-4 rounded-4 fade-in d-flex align-items-center gap-3"
                     style={{
                         zIndex: 3000,
-                        borderColor: toast.type === 'success' ? 'var(--success)' : 'var(--primary)',
+                        borderColor: toast.type === 'success' ? 'var(--success)' : toast.type === 'error' ? 'var(--danger)' : 'var(--primary)',
                         borderRadius: '16px',
                         maxWidth: '400px',
                         boxShadow: '0 10px 30px rgba(0,0,0,0.08)'
                     }}>
                     {toast.type === 'success' ? (
                         <CheckCircle className="text-success flex-shrink-0" size={24}/>
+                    ) : toast.type === 'error' ? (
+                        <ExclamationTriangleFill className="text-danger flex-shrink-0" size={24}/>
                     ) : (
                         <ExclamationCircleFill className="text-primary flex-shrink-0" size={24}/>
                     )}
@@ -366,6 +394,28 @@ const MyBookingsPage = () => {
                                                         <XCircle size={14}/> Отменить
                                                     </button>
                                                 )}
+
+                                                {filter === 'archive' && isPast && booking.status !== 'canceled' && (
+                                                    booking.is_reviewed ? (
+                                                        <span
+                                                            className="badge bg-light text-muted border border-secondary border-opacity-25 px-3 py-2 rounded-pill fw-bold small d-inline-flex align-items-center gap-1"
+                                                            style={{fontSize: '0.8rem'}}>
+                                                            <CheckCircleFill className="text-success" size={12}/> Оценено
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            className="btn btn-warning text-dark btn-sm px-3 py-2 rounded-pill fw-bold d-inline-flex align-items-center gap-1 w-auto border-0"
+                                                            style={{
+                                                                fontSize: '0.8rem',
+                                                                backgroundColor: '#fef3c7',
+                                                                color: '#b45309'
+                                                            }}
+                                                            onClick={() => openReviewModal(booking)}
+                                                        >
+                                                            <StarFill size={14} className="text-warning"/> Оценить
+                                                        </button>
+                                                    )
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -381,11 +431,7 @@ const MyBookingsPage = () => {
                     className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
                     style={{background: 'rgba(15, 23, 42, 0.7)', zIndex: 9999, backdropFilter: 'blur(8px)'}}>
                     <div className="bg-white p-4 p-md-5 text-center mx-3 fade-in"
-                         style={{
-                             borderRadius: '28px',
-                             maxWidth: '450px',
-                             width: '100%'
-                         }}>
+                         style={{borderRadius: '28px', maxWidth: '450px', width: '100%'}}>
                         <div className="mb-4">
                             <ExclamationCircleFill size={60} className="text-danger opacity-75"/>
                         </div>
@@ -396,11 +442,10 @@ const MyBookingsPage = () => {
                         </p>
                         <div className="d-flex gap-3">
                             <button className="btn btn-light w-100 py-3 fw-bold rounded-pill"
-                                    onClick={closeCancelModal}>
-                                Назад
+                                    onClick={closeCancelModal}>Назад
                             </button>
-                            <button className="btn btn-danger w-100 py-3 fw-bold rounded-pill" onClick={confirmCancel}>
-                                Да, отменить
+                            <button className="btn btn-danger w-100 py-3 fw-bold rounded-pill"
+                                    onClick={confirmCancel}>Да, отменить
                             </button>
                         </div>
                     </div>
@@ -413,11 +458,7 @@ const MyBookingsPage = () => {
                     className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
                     style={{background: 'rgba(15, 23, 42, 0.7)', zIndex: 9999, backdropFilter: 'blur(8px)'}}>
                     <div className="bg-white p-4 p-md-5 mx-3 fade-in text-start"
-                         style={{
-                             borderRadius: '28px',
-                             maxWidth: '480px',
-                             width: '100%'
-                         }}>
+                         style={{borderRadius: '28px', maxWidth: '480px', width: '100%'}}>
                         <div className="d-flex align-items-center gap-3 mb-4">
                             <div className="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
                                 <CreditCard size={28}/>
@@ -437,45 +478,84 @@ const MyBookingsPage = () => {
                                 <label className="form-label small fw-bold text-muted">Номер карты</label>
                                 <input type="text" className="form-control custom-input bg-light border-0"
                                        placeholder="0000 0000 0000 0000" disabled={paymentModal.loading} required
-                                       value={cardNumber} onChange={handleCardNumberChange}
-                                       maxLength="19" autoComplete="cc-number"/>
+                                       value={cardNumber} onChange={handleCardNumberChange} maxLength="19"
+                                       autoComplete="cc-number"/>
                             </div>
                             <div className="row g-3 mb-4">
                                 <div className="col-6">
                                     <label className="form-label small fw-bold text-muted">Срок действия</label>
                                     <input type="text" className="form-control custom-input bg-light border-0"
                                            placeholder="ММ/ГГ" disabled={paymentModal.loading} required
-                                           value={cardExpiry} onChange={handleCardExpiryChange}
-                                           maxLength="5" autoComplete="cc-exp"/>
+                                           value={cardExpiry} onChange={handleCardExpiryChange} maxLength="5"
+                                           autoComplete="cc-exp"/>
                                 </div>
                                 <div className="col-6">
                                     <label className="form-label small fw-bold text-muted">CVC / CVV</label>
                                     <input type="password" className="form-control custom-input bg-light border-0"
                                            placeholder="***" disabled={paymentModal.loading} required
-                                           value={cardCvc} onChange={handleCardCvcChange}
-                                           maxLength="3" autoComplete="cc-csc"/>
+                                           value={cardCvc} onChange={handleCardCvcChange} maxLength="3"
+                                           autoComplete="cc-csc"/>
                                 </div>
                             </div>
-
                             <div className="d-flex gap-3">
                                 <button type="button" className="btn btn-light w-100 py-3 fw-bold rounded-pill"
-                                        onClick={closePaymentModal} disabled={paymentModal.loading}>
-                                    Отмена
+                                        onClick={closePaymentModal} disabled={paymentModal.loading}>Отмена
                                 </button>
                                 <button type="submit"
                                         className="btn btn-primary w-100 py-3 fw-bold rounded-pill d-flex align-items-center justify-content-center gap-2"
                                         disabled={paymentModal.loading}>
-                                    {paymentModal.loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm" role="status"></span>
-                                            <span>Проведение...</span>
-                                        </>
-                                    ) : (
-                                        <span>Подтвердить</span>
-                                    )}
+                                    {paymentModal.loading ? <><span className="spinner-border spinner-border-sm"
+                                                                    role="status"></span><span>Проведение...</span></> :
+                                        <span>Подтвердить</span>}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {reviewModal.show && createPortal(
+                <div
+                    className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                    style={{background: 'rgba(15, 23, 42, 0.7)', zIndex: 9999, backdropFilter: 'blur(8px)'}}>
+                    <div className="bg-white p-4 p-md-5 text-center mx-3 fade-in"
+                         style={{borderRadius: '28px', maxWidth: '450px', width: '100%'}}>
+                        <div className="mb-4">
+                            <StarFill size={60} className="text-warning opacity-75"/>
+                        </div>
+                        <h3 className="fw-800 mb-2 text-dark">Оцените переговорную</h3>
+                        <p className="text-muted mb-4 small fw-medium">
+                            {reviewModal.roomName}
+                        </p>
+
+                        <div className="d-flex justify-content-center gap-2 mb-5">
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <span
+                                    key={star}
+                                    onClick={() => setReviewModal(prev => ({...prev, rating: star}))}
+                                    style={{cursor: 'pointer', transition: 'transform 0.2s'}}
+                                    className="hover-scale"
+                                >
+                                    {star <= reviewModal.rating
+                                        ? <StarFill size={40} className="text-warning"/>
+                                        : <Star size={40} className="text-muted opacity-25"/>}
+                                </span>
+                            ))}
+                        </div>
+
+                        <div className="d-flex gap-3">
+                            <button className="btn btn-light w-100 py-3 fw-bold rounded-pill"
+                                    onClick={closeReviewModal} disabled={reviewModal.loading}>
+                                Назад
+                            </button>
+                            <button className="btn btn-warning w-100 py-3 fw-bold rounded-pill text-dark border-0"
+                                    onClick={handleReviewSubmit} disabled={reviewModal.loading}
+                                    style={{backgroundColor: '#fef3c7'}}>
+                                {reviewModal.loading ? <span className="spinner-border spinner-border-sm"
+                                                             role="status"></span> : 'Отправить'}
+                            </button>
+                        </div>
                     </div>
                 </div>,
                 document.body

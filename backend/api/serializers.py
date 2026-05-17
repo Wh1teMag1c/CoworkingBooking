@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import User, Category, Amenity, Room, RoomImage, Booking, Review
 
 
@@ -7,7 +8,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'role', 'phone_number', 'avatar', 'bio')
+        fields = (
+            'id', 'username', 'email', 'password', 'first_name', 'last_name', 'role', 'phone_number', 'avatar', 'bio'
+        )
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -58,11 +61,15 @@ class BookingSerializer(serializers.ModelSerializer):
     user_name = serializers.ReadOnlyField(source='user.username')
     room_name = serializers.ReadOnlyField(source='room.name')
     room_details = BookingRoomSerializer(source='room', read_only=True)
+    is_reviewed = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
         fields = '__all__'
         read_only_fields = ('user',)
+
+    def get_is_reviewed(self, obj):
+        return Review.objects.filter(room=obj.room, user=obj.user).exists()
 
     def validate(self, data):
         start_time = data.get('start_time', self.instance.start_time if self.instance else None)
@@ -74,8 +81,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
-
     class Meta:
         model = Review
         fields = '__all__'
+        read_only_fields = ('user',)
