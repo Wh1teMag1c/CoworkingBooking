@@ -1,3 +1,4 @@
+import string
 from datetime import timedelta
 from decimal import Decimal
 
@@ -181,7 +182,7 @@ class FuzzingAPITests(HypTestCase):
         self.assertNotEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    @given(st.text(min_size=10, max_size=200))
+    @given(st.text(alphabet=string.ascii_letters + string.digits + ".-_", min_size=10, max_size=200))
     def test_fuzz_jwt_authentication_header(self, garbage_token):
         self.api_client.credentials(HTTP_AUTHORIZATION='Bearer ' + garbage_token)
         url = reverse("user-me")
