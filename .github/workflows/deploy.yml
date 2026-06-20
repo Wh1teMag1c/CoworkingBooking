@@ -38,14 +38,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8
-          # Устанавливаем зависимости бэкенда
           pip install -r backend/requirements.txt
 
       - name: Lint with flake8 (PEP8 check)
         run: |
-          # Проверяем код на критические синтаксические ошибки
           flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Проверяем остальной стиль (лимит 120 символов, не строгая проверка, чтобы не ломать сборку сразу)
           flake8 backend/ --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
 
       - name: Run Django tests
@@ -57,6 +54,8 @@ jobs:
           POSTGRES_PORT: 5432
           DJANGO_SECRET_KEY: test_secret_key_for_github_actions
           DJANGO_DEBUG: True
+          DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost
+          CORS_ALLOWED_ORIGINS: http://localhost:5173
         run: |
           cd backend
           python manage.py test
@@ -87,7 +86,9 @@ jobs:
             echo "POSTGRES_HOST=db" >> .env
             echo "POSTGRES_PORT=5432" >> .env
             echo "DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
-            echo "DJANGO_DEBUG=False" >> .env
+            echo "DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }}" >> .env
+            echo "DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}" >> .env
+            echo "CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}" >> .env
             
             docker compose up --build -d
             
