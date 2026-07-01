@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,14 +22,20 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY"
-)
-
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    default="django-insecure-local-dev-key" if DEBUG else None
+)
+
+if not SECRET_KEY:
+    raise ImproperlyConfigured("Отсутствует DJANGO_SECRET_KEY в переменных окружения!")
+
+allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost' if DEBUG else '')
+if not allowed_hosts_env:
+    raise ImproperlyConfigured("Отсутствует DJANGO_ALLOWED_HOSTS в переменных окружения!")
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -140,5 +147,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'api.User'
-cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',')]
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173' if DEBUG else '')
+if not cors_origins_env:
+    raise ImproperlyConfigured("Отсутствует CORS_ALLOWED_ORIGINS в переменных окружения!")
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]

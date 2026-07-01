@@ -24,6 +24,13 @@ from .serializers import (
 )
 
 
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.user == request.user
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -116,7 +123,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         if user.is_anonymous:
             return queryset.filter(is_active=True)
 
-        is_privileged = user.is_staff or user.role == "admin"
+        is_privileged = user.is_staff or getattr(user, "role", "") == "admin"
         action_allowed = self.action in [
             "retrieve",
             "update",
@@ -164,37 +171,32 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise DRFValidationError(error_msg)
 
     def get_queryset(self):
-        queryset = Booking.objects.all()
-        room_id = self.request.query_params.get("room")
-        if room_id:
-            return queryset.filter(room_id=room_id)
-
         user = self.request.user
         if user.is_anonymous:
             return Booking.objects.none()
 
-        is_privileged = user.is_staff or user.role == "admin"
-        action_allowed = self.action in [
-            "retrieve",
-            "update",
-            "partial_update",
-            "destroy",
-        ]
+        queryset = Booking.objects.all()
+        is_privileged = user.is_staff or getattr(user, "role", "") == "admin"
 
-        if action_allowed and is_privileged:
-            return queryset
+        if not is_privileged:
+            queryset = queryset.filter(user=user)
+        else:
+            action_allowed = self.action in ["retrieve", "update", "partial_update", "destroy"]
+            show_all = self.request.query_params.get("all")
+            if not (action_allowed or show_all):
+                queryset = queryset.filter(user=user)
 
-        show_all = self.request.query_params.get("all")
-        if show_all and is_privileged:
-            return queryset
+        room_id = self.request.query_params.get("room")
+        if room_id:
+            return queryset.filter(room_id=room_id)
 
-        return queryset.filter(user=user)
+        return queryset
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
         room = serializer.validated_data["room"]
@@ -209,8 +211,18 @@ class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or getattr(user, "role", "") == "admin":
+            return Payment.objects.all()
+        return Payment.objects.filter(booking__user=user)
+
     def perform_create(self, serializer):
+        booking = serializer.validated_data["booking"]
+
+        if booking.user != self.request.user:
+            raise DRFValidationError({"detail": "Вы не можете оплатить чужое бронирование."})
+
         payment = serializer.save()
-        booking = payment.booking
         booking.status = Booking.Status.CONFIRMED
         booking.save()
